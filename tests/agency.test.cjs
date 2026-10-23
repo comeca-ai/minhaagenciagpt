@@ -7,7 +7,7 @@ function boot(saved){
  const elements=new Map(),handlers=new Map(),storage=new Map();if(saved)storage.set('agencia-jhonata-workspace-v1',JSON.stringify(saved));
  const el=id=>{if(!elements.has(id))elements.set(id,{innerHTML:'',textContent:'',classList:{add(){},remove(){}},addEventListener(){},focus(){},showModal(){this.open=true},close(){this.open=false}});return elements.get(id)};
  const context={structuredClone,URL,Blob,FormData,setTimeout(){},clearTimeout(){},crypto:require('node:crypto').webcrypto,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},document:{getElementById:el,addEventListener(event,fn){if(!handlers.has(event))handlers.set(event,[]);handlers.get(event).push(fn)}},window:{scrollTo(){},addEventListener(){}},location:{hash:''},console};
- vm.createContext(context);for(const f of ['studio.js','agency.js','quality.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
+ vm.createContext(context);for(const f of ['studio.js','agency.js','prompts.js','quality.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
  const run=s=>vm.runInContext(s,context);return {run,el,storage,handlers};
 }
 const {run,el,storage,handlers}=boot();
@@ -46,4 +46,33 @@ run("studio().tasks[0].title='<img src=x onerror=alert(1)>';nav('tasks')");asser
 for(const attack of ["s.studio.tasks[0].creators=['helena','caio','lia','extra']","s.studio.tasks[0].minutes=-1","s.studio.people[0].photo='javascript:alert(1)'","s.studio.tasks[0].director='absent'","s.studio.tasks[0].result=''","s.studio.tasks[0].requests[0].status='Executed'"]){assert.equal(run(`(()=>{const s=structuredClone(state);${attack};return isState(s)})()`),false,attack)}
 assert.equal(run("esc('<script>alert(1)</script>')"),'&lt;script&gt;alert(1)&lt;/script&gt;');
 run('qualityForm(studio().tasks[0].id)');const qp=run('captured.submit');assert.ok(qp(form({review:'30','time-caio':'60','time-lia':'60','prompt-caio':'Redigir','prompt-lia':'Desenhar'})).error);assert.ok(qp(form({review:'20','time-caio':'50','time-lia':'50','prompt-caio':'Redigir','prompt-lia':'Desenhar'})).action);assert.equal(run('isState(state)'),true);assert.ok(run("promptFor(studio().tasks[0],'caio',50)").includes('Não reinicie o prazo'));
+// New contracts preserve old records while requiring explicit, evidenced approval.
+run("taskForm(studio().tasks[0].id)");
+const existingId=run('studio().tasks[0].id');
+const edit=run('captured.submit');
+assert.ok(edit(form({...data,title:'Estratégia teste',duration:'120','strategy-kind':'strategy','strategy-offer':'Assinatura mensal','strategy-channel':'Newsletter','strategy-metric':'Assinaturas pagas confirmadas'})).action);
+assert.equal(run('studio().tasks[0].strategy.kind'),'strategy');
+let generated=run("promptFor(studio().tasks[0],'caio',40)");
+assert.ok(generated.includes('Assinatura mensal'));
+assert.ok(generated.includes('Newsletter'));
+assert.ok(generated.includes('MONETIZAÇÃO:'));
+assert.ok(generated.includes('jhoneme-agency-2.0'));
+run("studio().tasks[0].strategy.kind='editorial'");
+assert.ok(run("promptFor(studio().tasks[0],'caio',40)").includes('independência editorial'));
+run("studio().tasks[0].brief='b'.repeat(10000);studio().tasks[0].strategy.sources='s'.repeat(10000)");
+assert.ok(run("promptFor(studio().tasks[0],'caio',40).length")<30000);
+assert.equal(run("(()=>{const t=structuredClone(studio().tasks[0]);t.strategy.kind='invented';return strategyValid(t)})()"),false);
+run('evalForm(studio().tasks[0].id)');
+const evaluate=run('captured.submit');
+const evalInput={agent:'caio','score-objective':'4','score-quality':'4','score-evidence':'4',evidence:'Trecho factual conferido','score-format':'4','score-timing':'4','score-business':'4',comment:'Testar oferta real',decision:'approved',critical:'facts'};
+// Evidence text and precision score have separate names in the form.
+assert.ok(evaluate(form(evalInput)).error);
+assert.ok(evaluate(form({...evalInput,decision:'revise'})).action);
+assert.equal(run('evalsComplete(studio().tasks[0])'),false);
+assert.equal(run('studio().tasks[0].status'),'Em revisão');
+assert.ok(evaluate(form({...evalInput,critical:'none'})).action);
+assert.equal(run('evalsComplete(studio().tasks[0])'),true);
+assert.ok(run("promptFor(studio().tasks[0],'caio',40)").includes('Testar oferta real'));
+assert.equal(run('isState(state)'),true);
+assert.ok(run('taskExport(studio().tasks[0])').includes('Público, distribuição e negócio'));
 console.log('OK — 12 telas; migração sem perda; prazo por tarefa; diretora responsável; limite de 3 criadores; entrega exige material; autorização registrada; exportação; dados inválidos e injeção rejeitados.');

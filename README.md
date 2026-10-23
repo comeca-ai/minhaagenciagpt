@@ -2,9 +2,21 @@
 
 Aplicativo visual em português para configurar uma agência de agentes de IA: recepção, equipe com retratos fictícios, marcas, pautas, sala de reunião, pedidos de ferramentas, prazos globais, repasses, prompts e avaliações.
 
+## Instalar em VPS com Docker
+
+O pacote inclui `Dockerfile`, Docker Compose, `install.sh` e `manage.sh`. Veja **[INSTALAR-VPS.md](INSTALAR-VPS.md)** para instalação com domínio/HTTPS, acesso local, backup, atualização e migração dos dados do navegador.
+
+```bash
+sudo bash install.sh --install-docker --domain agencia.seudominio.com --email voce@seudominio.com
+```
+
 ## Usar
 
 O aplicativo está em `dist/` e não exige compilação. Sirva essa pasta com um servidor de arquivos estáticos. Também é possível abrir `dist/index.html` para explorar; a persistência de arquivos locais varia conforme o navegador.
+
+## Prompts de conteúdo e monetização
+
+A versão `jhoneme-agency-2.0` integra briefing de negócio, contratos da diretora e dos criadores, contexto por rodada, feedback anterior e régua com seis critérios. Fontes inventadas, ações sem autorização e material ausente bloqueiam aprovação. Consulte [PROMPTS.md](PROMPTS.md) para o fluxo, as referências e os limites da avaliação.
 
 ## O que funciona
 
@@ -54,6 +66,7 @@ Os testes verificam as telas, migração de dados, prazos variáveis, limite de 
 - `dist/app.js`: estrutura anterior, navegação, persistência e backups.
 - `dist/studio.js`: equipe, projetos e reuniões.
 - `dist/agency.js`: recepção, pautas, ferramentas e exportações.
+- `dist/prompts.js`: contratos operacionais e contexto de conteúdo e negócio.
 - `dist/quality.js`: prazo global, repasses, prompts e avaliações.
 - `dist/styles.css`, `studio.css`, `jhoneme.css`: estilos e adaptação a telas menores.
 - `dist/assets/`: retratos fictícios e imagem conceitual gerados para o projeto.

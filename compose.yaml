@@ -1,0 +1,36 @@
+name: jhoneme
+services:
+  studio:
+    build:
+      context: .
+      args:
+        CADDY_IMAGE: ${CADDY_IMAGE:-caddy:2-alpine}
+    image: jhoneme-studio:local
+    restart: unless-stopped
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 100
+    mem_limit: 256m
+    cpus: 1.0
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    environment:
+      JHONEME_SITE_ADDRESS: ${JHONEME_SITE_ADDRESS:?Execute install.sh primeiro}
+      JHONEME_ACME_EMAIL: ${JHONEME_ACME_EMAIL:-admin@localhost}
+      JHONEME_ADMIN_USER: ${JHONEME_ADMIN_USER:?Execute install.sh primeiro}
+      JHONEME_PASSWORD_HASH: ${JHONEME_PASSWORD_HASH:?Execute install.sh primeiro}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+volumes:
+  caddy_data:
+  caddy_config:

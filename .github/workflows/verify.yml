@@ -1,0 +1,24 @@
+name: Verificar estúdio e container
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Contratos e interface
+        run: node tests/agency.test.cjs
+      - name: Fluxo do instalador
+        run: python3 tests/deployment.test.py
+      - name: Sintaxe dos scripts
+        run: bash -n install.sh manage.sh scripts/common.sh scripts/install-docker.sh tests/docker-smoke.sh
+      - name: Container real e autenticação
+        run: bash tests/docker-smoke.sh
