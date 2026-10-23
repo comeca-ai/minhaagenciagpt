@@ -7,7 +7,7 @@ function boot(saved){
  const elements=new Map(),handlers=new Map(),storage=new Map();if(saved)storage.set('agencia-jhonata-workspace-v1',JSON.stringify(saved));
  const el=id=>{if(!elements.has(id))elements.set(id,{innerHTML:'',textContent:'',classList:{add(){},remove(){}},addEventListener(){},focus(){},showModal(){this.open=true},close(){this.open=false}});return elements.get(id)};
  const context={structuredClone,URL,Blob,FormData,setTimeout(){},clearTimeout(){},crypto:require('node:crypto').webcrypto,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},document:{getElementById:el,addEventListener(event,fn){if(!handlers.has(event))handlers.set(event,[]);handlers.get(event).push(fn)}},window:{scrollTo(){},addEventListener(){}},location:{hash:''},console};
- vm.createContext(context);for(const f of ['studio.js','agency.js','prompts.js','quality.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
+ vm.createContext(context);for(const f of ['studio.js','agency.js','advisor.js','direction.js','prompts.js','quality.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
  const run=s=>vm.runInContext(s,context);return {run,el,storage,handlers};
 }
 const {run,el,storage,handlers}=boot();
@@ -16,7 +16,7 @@ assert.equal(run('isState(state)'),true);
 for(const page of ['reception','team','room','projects','tasks','approvals','overview','map','agents','flows','adjustments','settings']){run(`nav('${page}')`);assert.ok(el('app').innerHTML.includes('<main'),page);assert.ok(!el('app').innerHTML.includes('undefined'),page);}
 // Old backups remain usable without replacing any user customization.
 const legacy=run('structuredClone(initial)');legacy.areas[0].name='Direção escolhida pelo usuário';
-const migrated=boot(legacy);assert.equal(migrated.run('state.areas[0].name'),'Direção escolhida pelo usuário');assert.equal(migrated.run('state.studio.people.length'),4);assert.equal(migrated.run('state.studio.tasks.length'),0);
+const migrated=boot(legacy);assert.equal(migrated.run('state.areas[0].name'),'Direção escolhida pelo usuário');assert.equal(migrated.run('state.studio.people.length'),5);assert.equal(migrated.run('state.studio.tasks.length'),0);
 // Capture form submission logic without a browser to exercise business validation.
 run("let captured;studioForm=(title,label,body,submit)=>{captured={title,label,body,submit};return {}};");
 run("state.studio.people.find(p=>p.id==='marina').status='Aprovado';taskForm();");
@@ -75,4 +75,36 @@ assert.equal(run('evalsComplete(studio().tasks[0])'),true);
 assert.ok(run("promptFor(studio().tasks[0],'caio',40)").includes('Testar oferta real'));
 assert.equal(run('isState(state)'),true);
 assert.ok(run('taskExport(studio().tasks[0])').includes('Público, distribuição e negócio'));
+// Director replacement preserves deadlines, prior evidence and other projects.
+run("studio().people.push({...structuredClone(person('marina')),id:'nova-diretora',name:'Nova diretora',capacity:2,status:'Aprovado'});studio().tasks[0].status='Em criação';const windowStart=new Date().toISOString();studio().tasks[0].execution.startedAt=windowStart;studio().tasks[0].execution.deadlineAt=new Date(Date.parse(windowStart)+studio().tasks[0].minutes*60000).toISOString();");
+const originalDeadline=run('studio().tasks[0].execution.deadlineAt');
+const originalEvaluations=run('studio().tasks[0].execution.evals.length');
+const originalPrompts=run('studio().tasks[0].execution.handoffs.map(h=>h.prompt).join()');
+assert.ok(run("changeProjectDirector('pr-isenta','marina','','Encerrar vínculo',false)").error);
+assert.equal(run("personOnProject(person('marina'),'pr-isenta')"),true);
+assert.ok(run("changeProjectDirector('pr-isenta','marina','nova-diretora','Nova direção criativa',true)").action);
+assert.equal(run('studio().tasks[0].director'),'nova-diretora');
+assert.equal(run('studio().tasks[0].execution.deadlineAt'),originalDeadline);
+assert.equal(run('studio().tasks[0].execution.evals.length'),originalEvaluations);
+assert.equal(run('studio().tasks[0].directorHistory[0].handoffs.map(h=>h.prompt).join()'),originalPrompts);
+assert.equal(run("personOnProject(person('marina'),'pr-isenta')"),false);
+assert.equal(run("personOnProject(person('marina'),'pr-paraibao')"),true);
+assert.equal(run('evalsComplete(studio().tasks[0])'),false);
+assert.equal(run('isState(state)'),true);
+assert.ok(run('taskExport(studio().tasks[0])').includes('Direção anterior: Marina'));
+run("projectDirection('pr-isenta')");assert.ok(run('captured.body').includes('Avaliar uma entrega'));
+const badDirection=run("(()=>{const s=structuredClone(state);s.studio.tasks={};return isState(s)})()");assert.equal(badDirection,false);
+// Advisor migration is idempotent and consultation does not enter production.
+assert.equal(run("studio().people.filter(p=>p.id==='nizan-advisor').length"),1);
+run('ensureAdvisor(studio())');assert.equal(run("studio().people.filter(p=>p.id==='nizan-advisor').length"),1);
+assert.equal(run("personOnProject(person('nizan-advisor'),'pr-paraibao')"),true);
+run('taskPlan(studio().tasks[0].id)');assert.ok(!run('captured.body').includes('value="nizan-advisor"'));
+const beforeAdvisorDirector=run('studio().tasks[0].director');
+run("callAdvisor('pr-paraibao')");
+assert.equal(run('studio().meetings[0].project'),'pr-paraibao');
+assert.equal(run('studio().meetings[0].participants.join()'),'nizan-advisor');
+assert.equal(run('studio().meetings[0].entries.length'),0);
+assert.equal(run('studio().tasks[0].director'),beforeAdvisorDirector);
+assert.ok(run('meetingExport(studio().meetings[0])').includes('Não entra automaticamente'));
+assert.equal(run('isState(state)'),true);
 console.log('OK — 12 telas; migração sem perda; prazo por tarefa; diretora responsável; limite de 3 criadores; entrega exige material; autorização registrada; exportação; dados inválidos e injeção rejeitados.');

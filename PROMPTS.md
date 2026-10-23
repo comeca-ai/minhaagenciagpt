@@ -62,3 +62,7 @@ Não há benchmark de modelos executado nesta versão. O teste editorial realiza
 - [Anthropic — Demystifying evals for AI agents](https://www.anthropic.com/research/demystifying-evals-for-ai-agents): combinar verificações por código, julgamento por modelo e avaliação humana conforme o critério.
 
 As aplicações a público, oferta, distribuição e receita são decisões de produto da Jhoneme, não promessas de desempenho feitas por essas fontes.
+
+## Avaliar ou substituir a diretora
+
+Em **Projetos & marcas → Direção do projeto**, abra a avaliação de uma pauta ou registre a saída e a substituta. A substituta precisa estar contratada. Se há pautas abertas da diretora que sai, a troca exige transferência; janelas em andamento respeitam a capacidade contratada. O prazo original e as avaliações anteriores permanecem. Os prompts anteriores são arquivados no histórico e novos rascunhos incorporam a transição. Revise-os antes de executar. O desligamento vale apenas para aquele projeto; outros vínculos são preservados.

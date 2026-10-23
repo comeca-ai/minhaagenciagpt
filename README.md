@@ -23,7 +23,9 @@ A versão `jhoneme-agency-2.0` integra briefing de negócio, contratos da direto
 - Perfis editáveis: rosto, nome, cargo, habilidades, personalidade, instruções, autonomia e marcas.
 - Contratação como aprovação de um perfil local.
 - Projetos editáveis e arquivamento sem apagar referências.
+- Direção por projeto: avaliação, desligamento, substituição e transferência de pautas com prazo e histórico preservados.
 - Reuniões com participantes, perguntas, orientações e decisões registradas pelo usuário.
+- Nizan: advisor de IA baseado no pacote fornecido pelo usuário, disponível para todos os projetos sob demanda; sem entrar automaticamente nas sprints.
 - Briefing com diretora responsável, objetivo, formato e tempo definido por tarefa.
 - Plano com até três criadores; a escolha fica no plano da diretora, não no briefing inicial.
 - Várias diretoras, com regra de atendimento e capacidade definidas na contratação.
@@ -66,6 +68,7 @@ Os testes verificam as telas, migração de dados, prazos variáveis, limite de 
 - `dist/app.js`: estrutura anterior, navegação, persistência e backups.
 - `dist/studio.js`: equipe, projetos e reuniões.
 - `dist/agency.js`: recepção, pautas, ferramentas e exportações.
+- `dist/direction.js`: vínculos, substituição e histórico de diretoras por projeto.
 - `dist/prompts.js`: contratos operacionais e contexto de conteúdo e negócio.
 - `dist/quality.js`: prazo global, repasses, prompts e avaliações.
 - `dist/styles.css`, `studio.css`, `jhoneme.css`: estilos e adaptação a telas menores.

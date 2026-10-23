@@ -178,13 +178,13 @@ python3 tests/deployment.test.py
 node tests/agency.test.cjs
 ```
 
-O teste real do container está disponível para uma máquina com Docker, Compose e curl:
+O teste real do container foi executado com sucesso no GitHub Actions em 23/10/2026, incluindo construção, saúde, autenticação e arquivos estáticos. Para repetir em uma máquina com Docker, Compose e curl:
 
 ```bash
 bash tests/docker-smoke.sh
 ```
 
-Ele usa um projeto e uma porta locais isolados, verifica autenticação, arquivos, erros 404, persistência de configuração e limpeza. Não executa emissão de certificados públicos. Neste ambiente de preparação, não havia Docker disponível; portanto, build/execução real e emissão de HTTPS na VPS não foram verificados aqui.
+Ele usa projeto, imagem e porta locais isolados e verifica saúde, autenticação, arquivos, erros 404 e cabeçalhos. A execução real passou no GitHub Actions em 23/10/2026; a validação de DNS e emissão de HTTPS público permanece para a sua VPS. O teste não publica um domínio nem provisiona uma VPS.
 
 ## Referências oficiais
 
