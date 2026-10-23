@@ -30,9 +30,11 @@ A versão `jhoneme-agency-2.1` integra briefing de negócio, contratos da direto
 
 ## Um briefing, por áudio ou texto
 
-Na recepção, abra **Dar briefing por áudio**. Grave até dez minutos, pare e revise o pedido preenchido antes de salvar. O Deepgram transcreve em português brasileiro. O nome do projeto, a diretora e o prazo explícito são identificados por regras locais; casos ambíguos ficam em branco. A fala completa é preservada. Não há interpretação semântica geral por LLM nesta versão.
+Na página **Início**, abra **Falar ou escrever meu desafio**. Grave até dez minutos, pare, confira a transcrição e clique em **Salvar e abrir desafio**. O registro recebe um ID estável antes de você escolher projeto, diretora ou prazo. A transcrição original fica preservada; o arquivo de áudio não é armazenado.
 
-O formulário pede somente projeto, diretora, pedido e prazo. Nome da sprint, formato e direcionamentos adicionais são opcionais. O contexto da marca e o perfil já cadastrado acompanham os prompts. O fluxo agora tem três etapas: **Seu pedido → Produção → Entrega**, com migração dos registros anteriores.
+Na página do desafio, revise os campos identificados e confirme a direção. Rascunhos são salvos automaticamente. Plano, equipe, ferramentas, repasses, avaliações e material ficam nesta mesma página. O ID e o link permanecem iguais durante todo o trabalho. Confirmar novamente não duplica a tarefa. Os pedidos anteriores aparecem como desafios, mantendo seus dados.
+
+O menu principal reúne Início, Desafios, Equipe, Projetos e Reunião. Autorizações, estrutura e ajustes ficam em Gestão da agência. A identificação de nomes e prazos usa regras locais conservadoras; dados ausentes ou ambíguos ficam para revisão. Não há interpretação geral por LLM.
 
 A gravação Deepgram funciona no **Sites e na instalação VPS**, com `DEEPGRAM_API_KEY` configurada somente no servidor de cada ambiente. No Sites, use as variáveis secretas de produção. Na VPS/local, execute `sudo bash manage.sh deepgram` e informe a chave pelo prompt oculto. O clone do GitHub não inclui credenciais. Não insira a chave no JavaScript.
 
@@ -63,11 +65,11 @@ O comando recebe a chave com entrada oculta e reinicia o container. Use HTTPS ou
 
 ## Limites desta versão
 
-É um estúdio com persistência SQLite na VPS e uma versão hospedada no Sites, sem motor de IA conectado. Não executa agentes, não contrata pessoas, não instala ferramentas e não gera respostas autônomas. As avaliações, os planos e os materiais são registros manuais; não há notas ou entregas simuladas. Os rascunhos de prompt são montados com os dados da agência, não otimizados por um modelo.
+É um estúdio com persistência SQLite na VPS e D1 no Sites, sem motor de IA conectado. Não executa agentes, não contrata pessoas, não instala ferramentas e não gera respostas autônomas. As avaliações, os planos e os materiais são registros manuais; não há notas ou entregas simuladas. Os rascunhos de prompt são montados com os dados da agência, não otimizados por um modelo.
 
 Registrar uma janela não cria um trabalho em segundo plano. Para operação real, o backend precisa receber e impor um prazo absoluto comum aos agentes e ferramentas, persistir eventos, gerenciar cancelamento e reservar revisão dentro desse limite.
 
-Na VPS, os dados ficam no SQLite em volume Docker e são carregados em qualquer dispositivo após o login. Gravações concorrentes são protegidas por revisão, sem atualização em tempo real. O Sites usa `localStorage`; exporte e importe o JSON para migrar. O backup da VPS inclui o banco. Há uma porta visual com login, sem cadastro público, e sessões de até oito horas. Nenhuma senha é publicada no código.
+Na VPS, os dados ficam no SQLite em volume Docker e são carregados em qualquer dispositivo após o login. Gravações concorrentes são protegidas por revisão, sem atualização em tempo real. O Sites usa D1, separado por usuário autenticado, com migrações em `drizzle/`. Na primeira abertura com banco vazio, importa os registros válidos deste navegador; um banco preenchido sempre prevalece. O estado é salvo em blocos limitados por tamanho, em uma transação com controle de revisão. Links de desafios são privados e exigem o mesmo acesso à agência. A prévia estática continua usando `localStorage`. O backup da VPS inclui o banco. Há uma porta visual com login, sem cadastro público, e sessões de até oito horas. Nenhuma senha é publicada no código.
 
 ## Contrato para a futura orquestração
 
@@ -91,6 +93,8 @@ Os testes verificam as telas, migração de dados, prazos variáveis, limite de 
 
 - `public/app.js`: estrutura anterior, navegação, persistência e backups.
 - `public/studio.js`: equipe, projetos e reuniões.
+- `public/challenges.js`, `challenges.css`: entrada, rascunhos com ID, lista e página única de cada desafio.
+- `app/api/workspace/route.ts`, `server/d1-workspace.mjs`, `db/`, `drizzle/`: banco do Sites, autenticação, revisão e migrações.
 - `public/agency.js`: recepção, pautas, ferramentas e exportações.
 - `public/direction.js`: vínculos, substituição e histórico de diretoras por projeto.
 - `public/prompts.js`: contratos operacionais e contexto de conteúdo e negócio.

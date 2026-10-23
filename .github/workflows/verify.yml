@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: 24
       - name: Banco e sessões
-        run: node --test tests/server.test.mjs tests/sync.test.cjs tests/deepgram.test.mjs tests/voice.test.mjs tests/voice.test.cjs
+        run: node --test tests/server.test.mjs tests/d1-workspace.test.mjs tests/sync.test.cjs tests/deepgram.test.mjs tests/voice.test.mjs tests/voice.test.cjs
       - name: Fluxo do instalador
         run: python3 tests/deployment.test.py
       - name: Sintaxe dos scripts

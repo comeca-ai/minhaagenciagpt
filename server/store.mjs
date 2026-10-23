@@ -3,12 +3,8 @@ import {mkdirSync,chmodSync} from 'node:fs';
 import {dirname} from 'node:path';
 import {createHash, randomBytes} from 'node:crypto';
 
-export function validWorkspace(state){
-  return state&&state.schema===1&&typeof state==='object'&&!Array.isArray(state)&&
-    ['areas','agents','steps','adjustments','history'].every(k=>Array.isArray(state[k]))&&
-    state.studio&&state.studio.version===1&&['people','projects','meetings','tasks'].every(k=>Array.isArray(state.studio[k]))&&
-    state.studio.people.length<=100&&state.studio.projects.length<=200&&state.studio.meetings.length<=500&&state.studio.tasks.length<=1000;
-}
+import {validWorkspace} from './workspace-validation.mjs';
+export {validWorkspace} from './workspace-validation.mjs';
 export function openStore(path,authFingerprint=''){
   if(path!==':memory:')mkdirSync(dirname(path),{recursive:true,mode:0o700});
   const db=new DatabaseSync(path);

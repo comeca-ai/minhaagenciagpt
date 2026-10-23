@@ -7,7 +7,7 @@ function boot(saved){
  const elements=new Map(),handlers=new Map(),storage=new Map();if(saved)storage.set('agencia-jhonata-workspace-v1',JSON.stringify(saved));
  const el=id=>{if(!elements.has(id))elements.set(id,{innerHTML:'',textContent:'',classList:{add(){},remove(){}},addEventListener(){},focus(){},showModal(){this.open=true},close(){this.open=false}});return elements.get(id)};
  const context={structuredClone,URL,Blob,FormData,setTimeout(){},clearTimeout(){},crypto:require('node:crypto').webcrypto,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},document:{getElementById:el,addEventListener(event,fn){if(!handlers.has(event))handlers.set(event,[]);handlers.get(event).push(fn)}},window:{scrollTo(){},addEventListener(){}},location:{hash:''},console};
- vm.createContext(context);for(const f of ['studio.js','agency.js','intake.js','advisor.js','direction.js','prompts.js','quality.js','setup.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
+ vm.createContext(context);for(const f of ['studio.js','agency.js','intake.js','advisor.js','direction.js','prompts.js','quality.js','setup.js','challenges.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
  const run=s=>vm.runInContext(s,context);return {run,el,storage,handlers};
 }
 const {run,el,storage,handlers}=boot();
@@ -163,3 +163,21 @@ assert.equal(hiring.run('isState(state)'),true);
 const longPrompt=hiring.run("agencyPrompt(studio().tasks[0],'marina',45,true)");
 assert.ok(longPrompt.includes('Fim do briefing completo.'));assert.ok(longPrompt.includes('Fim do perfil completo.'));
 console.log('OK — contratação por envio nativo, validação, persistência e briefing longo preservado.');
+// A briefing becomes a durable draft before project, director or deadline exist.
+const challengeApp=boot();const cr=challengeApp.run;
+cr("const draftChallenge=createChallenge('Quero um texto sobre inteligência artificial.','voice');persist('Criou desafio');");
+const originalChallenge=cr('structuredClone(draftChallenge)');
+assert.equal(originalChallenge.source,'voice');assert.equal(originalChallenge.transcript,originalChallenge.brief);
+assert.equal(originalChallenge.project,'');assert.equal(originalChallenge.director,'');assert.equal(originalChallenge.minutes,null);
+assert.equal(cr('isState(state)'),true);assert.ok(cr('confirmChallenge(draftChallenge)').error);assert.equal(cr('studio().tasks.length'),0);
+const reopenedChallenge=boot(cr('structuredClone(state)'));assert.equal(reopenedChallenge.run('studio().challenges[0].id'),originalChallenge.id);
+cr("person('marina').status='Aprovado';Object.assign(draftChallenge,{project:'pr-paraibao',director:'marina',minutes:30});confirmChallenge(draftChallenge);confirmChallenge(draftChallenge);");
+assert.equal(cr('studio().tasks.length'),1);assert.equal(cr('studio().tasks[0].id'),originalChallenge.id);
+assert.equal(cr('draftChallenge.transcript'),originalChallenge.transcript);assert.equal(cr('isState(state)'),true);
+cr("studio().tasks[0].title='<img src=x onerror=alert(1)>';nav('desafios/'+draftChallenge.id)");
+assert.ok(challengeApp.el('app').innerHTML.includes('&lt;img'));assert.ok(challengeApp.el('app').innerHTML.includes('Equipe e plano da diretora'));assert.ok(challengeApp.el('app').innerHTML.includes('Material do desafio'));
+cr('ensureChallenges(studio());ensureChallenges(studio())');assert.equal(cr('studio().challenges.length'),1);
+const legacyTasks=cr('structuredClone(state)');delete legacyTasks.studio.challenges;
+const importedChallenges=boot(legacyTasks);assert.equal(importedChallenges.run('studio().challenges[0].taskId'),originalChallenge.id);assert.equal(importedChallenges.run('isState(state)'),true);
+for(const attack of ["s.studio.challenges.push({...s.studio.challenges[0]})","s.studio.challenges[0].taskId='missing'","s.studio.challenges[0].minutes=-1"]){assert.equal(cr(`(()=>{const s=structuredClone(state);${attack};return isState(s)})()`),false)}
+console.log('OK — desafio com ID persistente desde o briefing, transcrição preservada, confirmação idempotente, migração e página única.');
