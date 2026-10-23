@@ -130,6 +130,10 @@ assert.equal(draft.project,'');assert.equal(draft.minutes,'');assert.ok(draft.wa
 draft=slim.run("intakeDraft('Marina, para o Paraibão quero um vídeo de 3 minutos. Entregue em 45 minutos.')");
 assert.equal(draft.minutes,45);
 assert.equal(slim.run("intakeDraft('Para o Paraibão, entregar em quarenta e cinco minutos.').minutes"),45);
+assert.equal(slim.run("intakeDraft('Entregue em cento e vinte minutos.').minutes"),120);
+assert.equal(slim.run("intakeDraft('Entregue em 1,5 horas.').minutes"),90);
+assert.equal(slim.run("intakeDraft('Entregue em meia hora.').minutes"),30);
+assert.equal(slim.run("intakeDraft('Entregue em uma hora e meia.').minutes"),90);
 assert.equal(slim.run("intakeDraft('Um projeto novo, diretora desconhecida, entregar amanhã').project"),'');
 assert.equal(slim.run("intakeDraft('Um projeto novo, diretora desconhecida, entregar amanhã').minutes"),'');
 console.log('OK — 13 telas; migração sem perda; prazo por tarefa; diretora responsável; limite de 3 criadores; entrega exige material; autorização registrada; exportação; dados inválidos e injeção rejeitados.');
