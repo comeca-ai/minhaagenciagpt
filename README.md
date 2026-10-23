@@ -26,11 +26,11 @@ Na VPS, use o instalador para ter login e SQLite. Para explorar apenas a prévia
 
 ## Prompts de conteúdo e monetização
 
-A versão `jhoneme-agency-2.0` integra briefing de negócio, contratos da diretora e dos criadores, contexto por rodada, feedback anterior e régua com seis critérios. Fontes inventadas, ações sem autorização e material ausente bloqueiam aprovação. Consulte [PROMPTS.md](PROMPTS.md) para o fluxo, as referências e os limites da avaliação.
+A versão `jhoneme-agency-2.1` integra briefing de negócio, contratos da diretora e dos criadores, contexto por rodada, feedback anterior e régua com seis critérios. Fontes inventadas, ações sem autorização e material ausente bloqueiam aprovação. Consulte [PROMPTS.md](PROMPTS.md) para o fluxo, as referências e os limites da avaliação.
 
 ## Um briefing, por áudio ou texto
 
-Na recepção, abra **Dar briefing por áudio**. Grave até dois minutos, pare e revise o pedido preenchido antes de salvar. O Deepgram transcreve em português brasileiro. O nome do projeto, a diretora e o prazo explícito são identificados por regras locais; casos ambíguos ficam em branco. A fala completa é preservada. Não há interpretação semântica geral por LLM nesta versão.
+Na recepção, abra **Dar briefing por áudio**. Grave até dez minutos, pare e revise o pedido preenchido antes de salvar. O Deepgram transcreve em português brasileiro. O nome do projeto, a diretora e o prazo explícito são identificados por regras locais; casos ambíguos ficam em branco. A fala completa é preservada. Não há interpretação semântica geral por LLM nesta versão.
 
 O formulário pede somente projeto, diretora, pedido e prazo. Nome da sprint, formato e direcionamentos adicionais são opcionais. O contexto da marca e o perfil já cadastrado acompanham os prompts. O fluxo agora tem três etapas: **Seu pedido → Produção → Entrega**, com migração dos registros anteriores.
 
@@ -103,6 +103,6 @@ Nenhuma chave SSH, token, segredo ou dado de cliente deve ser adicionado ao repo
 
 ## Entrada por voz
 
-O site hospedado usa o login privado do Sites. O backend da VPS continua com login e SQLite. Configure `DEEPGRAM_API_KEY` como segredo do servidor para transcrever áudio com Nova-3 em português. No Sites, a chave fica nas variáveis secretas de produção; na VPS, em `.env` fora do Git. Reinicie o serviço após configurá-la. O áudio é enviado apenas após Parar e transcrever, até 2 minutos / 6 MB por gravação, e não é armazenado pela agência. Na recepção, parar abre a revisão do pedido preenchido. Nos demais campos, você revisa e aplica a transcrição. Nada inicia uma sprint automaticamente.
+O site hospedado usa o login privado do Sites. O backend da VPS continua com login e SQLite. Configure `DEEPGRAM_API_KEY` como segredo do servidor para transcrever áudio com Nova-3 em português. No Sites, a chave fica nas variáveis secretas de produção; na VPS, em `.env` fora do Git. Reinicie o serviço após configurá-la. O áudio é enviado apenas após Parar e transcrever, até 10 minutos / 25 MB por gravação, e não é armazenado pela agência. Na recepção, parar abre a revisão do pedido preenchido. Nos demais campos, você revisa e aplica a transcrição. Nada inicia uma sprint automaticamente.
 
 `public/` contém a interface compartilhada pelo Sites e pela VPS. `app/api/transcribe/route.ts` atende o Sites; `server/http.mjs` atende a VPS, ambos usando `server/transcribe.mjs`. Execute `npm run build` para o Sites. A transcrição não conecta automaticamente a produção de agentes ao n8n.

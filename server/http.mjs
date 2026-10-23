@@ -42,15 +42,15 @@ export function createAgencyServer({database=process.env.JHONEME_DB_PATH||'/agen
     res.writeHead(302,{Location:'/login'});return res.end();
    }
    if(path==='/api/session'&&req.method==='GET')return send(res,200,{authenticated:true});
-   if(path==='/api/voice-config'&&req.method==='GET')return send(res,200,{available:!!deepgramKey,maxSeconds:120,maxBytes:MAX_AUDIO_BYTES});
+   if(path==='/api/voice-config'&&req.method==='GET')return send(res,200,{available:!!deepgramKey,maxSeconds:600,maxBytes:MAX_AUDIO_BYTES});
    if(path==='/api/transcribe'&&req.method==='POST'){
     if(!deepgramKey)return send(res,503,{error:'Configure o Deepgram no servidor para usar a gravação.'});
     if(!AUDIO_TYPES.has(audioType(req.headers['content-type'])))return send(res,415,{error:'Formato de áudio não suportado.'});
-    if(Number(req.headers['content-length'])>MAX_AUDIO_BYTES)return send(res,413,{error:'Limite de 6 MB por gravação.'});
+    if(Number(req.headers['content-length'])>MAX_AUDIO_BYTES)return send(res,413,{error:'Limite de 25 MB por gravação.'});
     const now=Date.now();if(audioWindow.until<=now)audioWindow={until:now+600000,count:0};
     if(activeAudio>=2||audioWindow.count>=12)return send(res,429,{error:'Limite de gravações atingido. Aguarde alguns minutos.'});
     activeAudio++;audioWindow.count++;
-    try{let size=0,parts=[];for await(const chunk of req){size+=chunk.length;if(size>MAX_AUDIO_BYTES)throw Object.assign(new Error('Limite de 6 MB por gravação.'),{status:413});parts.push(chunk)}const result=await transcriber(Buffer.concat(parts),req.headers['content-type'],{key:deepgramKey});return send(res,200,result)}finally{activeAudio--}
+    try{let size=0,parts=[];for await(const chunk of req){size+=chunk.length;if(size>MAX_AUDIO_BYTES)throw Object.assign(new Error('Limite de 25 MB por gravação.'),{status:413});parts.push(chunk)}const result=await transcriber(Buffer.concat(parts),req.headers['content-type'],{key:deepgramKey});return send(res,200,result)}finally{activeAudio--}
    }
    if(path==='/api/logout'&&req.method==='POST'){store.deleteSession(token);return send(res,200,{ok:true},{'Set-Cookie':cookie('',true)})}
    if(path==='/api/workspace'&&req.method==='GET')return send(res,200,store.read());

@@ -89,7 +89,7 @@ sudo bash manage.sh deepgram --key-file /caminho/protegido/deepgram.txt
 
 A chave fica no `.env` privado e é enviada somente pelo servidor ao Deepgram. Pacotes privados preparados com a chave já a incluem; o GitHub contém somente o nome da variável, vazio. Backups com `.env` também contêm essa chave e devem permanecer privados.
 
-Use HTTPS ou localhost via túnel SSH e permita o microfone no navegador. O limite é de dois minutos/6 MB por gravação, duas transcrições simultâneas e doze tentativas por dez minutos nesta instância. O serviço pode gerar cobrança na conta Deepgram. Não há retentativa automática de transcrição.
+Use HTTPS ou localhost via túnel SSH e permita o microfone no navegador. O limite é de dez minutos/25 MB por gravação, duas transcrições simultâneas e doze tentativas por dez minutos nesta instância. O serviço pode gerar cobrança na conta Deepgram. Não há retentativa automática de transcrição.
 
 O servidor solicita Nova-3, `language=pt-BR`, formatação e `mip_opt_out=true`. Áudio e resposta bruta não são gravados no banco nem em logs da aplicação. Só o texto que você aprovar vai para o pedido. O Deepgram mantém os metadados de uso conforme sua política. Referências: https://developers.deepgram.com/docs/pre-recorded-audio e https://developers.deepgram.com/trust-security/your-data.
 

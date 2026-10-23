@@ -23,4 +23,4 @@ test('repeated requests are limited per identity',async()=>{
  assert.equal((await transcribe(request(),options)).status,429);
 });
 
-test('hosted configuration is authenticated and reveals availability only',async()=>{assert.equal(voiceConfig({authorized:false,key:'private-key'}).status,401);const r=voiceConfig({authorized:true,key:'private-key'});assert.deepEqual(await r.json(),{available:true,maxSeconds:120,maxBytes:6000000});assert.equal((await voiceConfig({authorized:true,key:''}).json()).available,false)});
+test('hosted configuration is authenticated and reveals availability only',async()=>{assert.equal(voiceConfig({authorized:false,key:'private-key'}).status,401);const r=voiceConfig({authorized:true,key:'private-key'});assert.deepEqual(await r.json(),{available:true,maxSeconds:600,maxBytes:25000000});assert.equal((await voiceConfig({authorized:true,key:''}).json()).available,false)});
