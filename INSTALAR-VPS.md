@@ -73,6 +73,28 @@ O serviço retorna após reinicialização da VPS, salvo se tiver sido parado ma
 
 Para instalar sem terminal interativo, use `--password-file /caminho/protegido/senha.txt`, com uma única linha de 8 a 72 bytes. A senha vai pela entrada padrão ao gerador de hash e não aparece nos argumentos. Para trocar, use `manage.sh password --password-file ...`.
 
+## Briefing por áudio com Deepgram
+
+Na recepção, clique em **Dar briefing por áudio**, depois em **Gravar pelo microfone**. Ao parar, o áudio vai ao servidor e ao Deepgram; a transcrição preenche uma revisão do pedido. Você confere projeto, diretora e prazo antes de registrar a sprint. Para aproveitar a organização sem áudio, escreva ou cole o pedido na mesma tela.
+
+O preenchimento reconhece nomes cadastrados, prazos explícitos e orientações rotuladas. Não é uma interpretação geral por modelo de linguagem. Informações ausentes ou ambíguas precisam ser completadas; todas as orientações permanecem no texto integral. Registrar não inicia automaticamente a produção dos agentes.
+
+Configure a integração após instalar ou atualizar:
+
+```bash
+sudo bash manage.sh deepgram
+# Sem terminal interativo, use um arquivo privado:
+sudo bash manage.sh deepgram --key-file /caminho/protegido/deepgram.txt
+```
+
+A chave fica no `.env` privado e é enviada somente pelo servidor ao Deepgram. Pacotes privados preparados com a chave já a incluem; o GitHub contém somente o nome da variável, vazio. Backups com `.env` também contêm essa chave e devem permanecer privados.
+
+Use HTTPS ou localhost via túnel SSH e permita o microfone no navegador. O limite é de dois minutos/6 MB por gravação, duas transcrições simultâneas e doze tentativas por dez minutos nesta instância. O serviço pode gerar cobrança na conta Deepgram. Não há retentativa automática de transcrição.
+
+O servidor solicita Nova-3, `language=pt-BR`, formatação e `mip_opt_out=true`. Áudio e resposta bruta não são gravados no banco nem em logs da aplicação. Só o texto que você aprovar vai para o pedido. O Deepgram mantém os metadados de uso conforme sua política. Referências: https://developers.deepgram.com/docs/pre-recorded-audio e https://developers.deepgram.com/trust-security/your-data.
+
+A prévia estática do Sites continua sem um backend de transcrição. Nela, o preenchimento pode ser experimentado com texto; o botão informa que o áudio exige a instalação VPS.
+
 ## Atualizar e reverter
 
 1. Faça `sudo bash manage.sh backup` antes de substituir arquivos.
@@ -112,7 +134,7 @@ sudo bash manage.sh restore-data "$PWD/workspace.json"
 
 ```bash
 node tests/agency.test.cjs
-node --test tests/server.test.mjs tests/sync.test.cjs
+node --test tests/server.test.mjs tests/sync.test.cjs tests/deepgram.test.mjs tests/voice.test.cjs
 python3 tests/deployment.test.py
 bash tests/docker-smoke.sh
 ```

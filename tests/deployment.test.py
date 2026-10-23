@@ -110,6 +110,17 @@ sys.exit(0)
         self.assertNotIn("Estúdio iniciado", result.stdout)
         self.assertIn("não ficou saudável", result.stderr)
 
+    def test_deepgram_key_is_private_and_not_in_process_arguments(self):
+        self.assertEqual(self.install().returncode, 0)
+        secret = "test-deepgram-token-only-12345"
+        keyfile = self.root / "deepgram.txt"
+        keyfile.write_text(secret)
+        result = subprocess.run(["bash", str(self.root / "manage.sh"), "deepgram", "--key-file", str(keyfile)], cwd=self.root, env=self.env, capture_output=True, text=True, timeout=15)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(secret, (self.root / ".env").read_text())
+        self.assertNotIn(secret, result.stdout + result.stderr + self.log.read_text())
+        self.assertEqual((self.root / ".env").stat().st_mode & 0o777, 0o600)
+
     def test_short_and_multiline_passwords_rejected(self):
         for password in ("short", "one-line-long\nsecond-line"):
             with self.subTest(password=password):

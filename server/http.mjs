@@ -3,12 +3,14 @@ import {readFile,realpath} from 'node:fs/promises';
 import {resolve,sep,extname} from 'node:path';
 import {createHash} from 'node:crypto';
 import {openStore,validWorkspace} from './store.mjs';
+import {transcribeAudio,MAX_AUDIO_BYTES,AUDIO_TYPES,audioType} from './deepgram.mjs';
 
 const maxBytes=8_000_000;
 const mime={'.html':'text/html; charset=utf-8','.js':'application/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.webp':'image/webp','.svg':'image/svg+xml','.json':'application/json'};
-export function createAgencyServer({database=process.env.JHONEME_DB_PATH||'/agency/jhoneme.sqlite',staticRoot='/srv',secure=process.env.JHONEME_MODE==='https',verifyCredentials,authFingerprint}={}){
+export function createAgencyServer({database=process.env.JHONEME_DB_PATH||'/agency/jhoneme.sqlite',staticRoot='/srv',secure=process.env.JHONEME_MODE==='https',verifyCredentials,authFingerprint,deepgramKey=process.env.DEEPGRAM_API_KEY,transcriber=transcribeAudio}={}){
  const fingerprint=authFingerprint??createHash('sha256').update((process.env.JHONEME_ADMIN_USER||'')+'\0'+(process.env.JHONEME_PASSWORD_HASH||'')).digest('hex');
  const store=openStore(database,fingerprint),attempts=new Map();let activeLogins=0;
+ let activeAudio=0,audioWindow={until:0,count:0};
  const verify=verifyCredentials||async function(username,password){const auth=Buffer.from(username+':'+password).toString('base64');const result=await fetch('http://127.0.0.1:8082/verify',{headers:{Authorization:'Basic '+auth},signal:AbortSignal.timeout(10000)});return result.status===200};
  const cookie=(token,clear=false)=>`jhoneme_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${clear?0:28800}${secure?'; Secure':''}`;
  const tokenOf=req=>(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('jhoneme_session='))?.slice(16)||'';
@@ -40,6 +42,16 @@ export function createAgencyServer({database=process.env.JHONEME_DB_PATH||'/agen
     res.writeHead(302,{Location:'/login'});return res.end();
    }
    if(path==='/api/session'&&req.method==='GET')return send(res,200,{authenticated:true});
+   if(path==='/api/voice-config'&&req.method==='GET')return send(res,200,{available:!!deepgramKey,maxSeconds:120,maxBytes:MAX_AUDIO_BYTES});
+   if(path==='/api/transcribe'&&req.method==='POST'){
+    if(!deepgramKey)return send(res,503,{error:'Configure o Deepgram no servidor para usar a gravação.'});
+    if(!AUDIO_TYPES.has(audioType(req.headers['content-type'])))return send(res,415,{error:'Formato de áudio não suportado.'});
+    if(Number(req.headers['content-length'])>MAX_AUDIO_BYTES)return send(res,413,{error:'Limite de 6 MB por gravação.'});
+    const now=Date.now();if(audioWindow.until<=now)audioWindow={until:now+600000,count:0};
+    if(activeAudio>=2||audioWindow.count>=12)return send(res,429,{error:'Limite de gravações atingido. Aguarde alguns minutos.'});
+    activeAudio++;audioWindow.count++;
+    try{let size=0,parts=[];for await(const chunk of req){size+=chunk.length;if(size>MAX_AUDIO_BYTES)throw Object.assign(new Error('Limite de 6 MB por gravação.'),{status:413});parts.push(chunk)}const result=await transcriber(Buffer.concat(parts),req.headers['content-type'],{key:deepgramKey});return send(res,200,result)}finally{activeAudio--}
+   }
    if(path==='/api/logout'&&req.method==='POST'){store.deleteSession(token);return send(res,200,{ok:true},{'Set-Cookie':cookie('',true)})}
    if(path==='/api/workspace'&&req.method==='GET')return send(res,200,store.read());
    if(path==='/api/workspace'&&req.method==='PUT'){

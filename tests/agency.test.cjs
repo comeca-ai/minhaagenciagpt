@@ -7,7 +7,7 @@ function boot(saved){
  const elements=new Map(),handlers=new Map(),storage=new Map();if(saved)storage.set('agencia-jhonata-workspace-v1',JSON.stringify(saved));
  const el=id=>{if(!elements.has(id))elements.set(id,{innerHTML:'',textContent:'',classList:{add(){},remove(){}},addEventListener(){},focus(){},showModal(){this.open=true},close(){this.open=false}});return elements.get(id)};
  const context={structuredClone,URL,Blob,FormData,setTimeout(){},clearTimeout(){},crypto:require('node:crypto').webcrypto,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},document:{getElementById:el,addEventListener(event,fn){if(!handlers.has(event))handlers.set(event,[]);handlers.get(event).push(fn)}},window:{scrollTo(){},addEventListener(){}},location:{hash:''},console};
- vm.createContext(context);for(const f of ['studio.js','agency.js','advisor.js','direction.js','prompts.js','quality.js','setup.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
+ vm.createContext(context);for(const f of ['studio.js','agency.js','intake.js','advisor.js','direction.js','prompts.js','quality.js','setup.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
  const run=s=>vm.runInContext(s,context);return {run,el,storage,handlers};
 }
 const {run,el,storage,handlers}=boot();
@@ -20,7 +20,7 @@ const migrated=boot(legacy);assert.equal(migrated.run('state.areas[0].name'),'Di
 // Capture form submission logic without a browser to exercise business validation.
 run("let captured;studioForm=(title,label,body,submit)=>{captured={title,label,body,submit};return {}};");
 run("state.studio.people.find(p=>p.id==='marina').status='Aprovado';taskForm();");
-assert.ok(run('captured.body').includes('Quanto tempo'));
+assert.ok(run('captured.body').includes('Prazo total'));
 assert.ok(!run('captured.body').includes('name="creator"'));
 function form(data){const f=new FormData();for(const [k,v]of Object.entries(data)){for(const x of Array.isArray(v)?v:[v])f.append(k,x)}return f}
 const data={title:'Campanha teste',project:'pr-isenta',director:'marina',brief:'Objetivo real',format:'Um roteiro',duration:'45',unit:'min'};
@@ -107,17 +107,29 @@ assert.equal(run('studio().meetings[0].entries.length'),0);
 assert.equal(run('studio().tasks[0].director'),beforeAdvisorDirector);
 assert.ok(run('meetingExport(studio().meetings[0])').includes('Não entra automaticamente'));
 assert.equal(run('isState(state)'),true);
-// Guided setup never advances before the current configuration exists.
+// The shorter flow preserves old progress and blocks production until a request exists.
 const guided=boot();guided.run("nav('setup')");
-assert.equal(guided.run('setupReady(0)'),true);
-assert.equal(guided.run('setupReady(1)'),false);
-assert.equal(guided.run('setupGo(2)'),false);
-assert.equal(guided.run('setupOf().step'),0);
-assert.equal(guided.run('setupGo(1)'),true);
-guided.run("person('marina').status='Aprovado';changeProjectDirector('pr-isenta','','marina','Primeira diretora',false)");
-assert.equal(guided.run('setupReady(1)'),true);
-assert.equal(guided.run('setupGo(2)'),true);
-assert.equal(guided.run('setupGo(3)'),false);
-assert.ok(guided.el('app').innerHTML.includes('Objetivo e contexto'));
+assert.equal(guided.run('setupReady(0)'),false);
+assert.equal(guided.run('setupGo(1)'),false);
+assert.equal(guided.run('setupSteps.length'),3);
+guided.run("studio().setup={step:4,project:'pr-isenta',task:''};setupOf()");
+assert.equal(guided.run('setupOf().step'),1);
+assert.equal(guided.run('setupOf().version'),2);
 assert.equal(guided.run('isState(state)'),true);
+// A single request is enough; title and format are optional, never requested twice.
+const slim=boot();slim.run("studio().people.find(p=>p.id==='marina').status='Aprovado';let captured;studioForm=(title,label,body,submit)=>{captured={body,submit};return {}};taskForm()");
+assert.ok(slim.run('captured.submit')(form({project:'pr-isenta',director:'marina',brief:'Criar três anúncios para captar pedidos de atendimento.',duration:'30',unit:'min'})).action);
+assert.equal(slim.run('studio().tasks[0].brief'),'Criar três anúncios para captar pedidos de atendimento.');
+assert.equal(slim.run('studio().tasks[0].format'),'Conforme o pedido à diretora');
+assert.equal(slim.run('studio().tasks[0].title'),'Criar três anúncios para captar pedidos de atendimento.');
+const spoken='Para o Paraibão, quero uma matéria sobre IA. Marina dirige e tem trinta minutos.';
+let draft=slim.run(`intakeDraft(${JSON.stringify(spoken)})`);
+assert.equal(draft.minutes,30);assert.equal(draft.director,'marina');assert.equal(draft.project,'pr-paraibao');assert.equal(draft.brief,spoken);
+draft=slim.run("intakeDraft('Para o Paraibão e o IsentaPCD. Marina tem 30 minutos ou 60 minutos.')");
+assert.equal(draft.project,'');assert.equal(draft.minutes,'');assert.ok(draft.warnings.length>=2);
+draft=slim.run("intakeDraft('Marina, para o Paraibão quero um vídeo de 3 minutos. Entregue em 45 minutos.')");
+assert.equal(draft.minutes,45);
+assert.equal(slim.run("intakeDraft('Para o Paraibão, entregar em quarenta e cinco minutos.').minutes"),45);
+assert.equal(slim.run("intakeDraft('Um projeto novo, diretora desconhecida, entregar amanhã').project"),'');
+assert.equal(slim.run("intakeDraft('Um projeto novo, diretora desconhecida, entregar amanhã').minutes"),'');
 console.log('OK — 13 telas; migração sem perda; prazo por tarefa; diretora responsável; limite de 3 criadores; entrega exige material; autorização registrada; exportação; dados inválidos e injeção rejeitados.');

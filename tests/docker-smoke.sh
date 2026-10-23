@@ -45,12 +45,13 @@ base="http://127.0.0.1:$test_port"
 [[ "$(curl -sS -H "Origin: $base" -H 'Content-Type: application/json' --data '{"username":"tester","password":"wrong"}' -o /dev/null -w '%{http_code}' "$base/api/login")" == 401 ]] || fail 'Senha incorreta não foi bloqueada.'
 printf '{"username":"tester","password":"%s"}' "$test_password" > "$test_dir/login.json"
 [[ "$(curl -sS -H "Origin: $base" -H 'Content-Type: application/json' --data-binary "@$test_dir/login.json" -c "$test_dir/cookies" -o /dev/null -w '%{http_code}' "$base/api/login")" == 200 ]] || fail 'Login falhou.'
-for path in / /app.js /server-sync.js /studio.js /quality.js /styles.css /assets/marina.png; do
+for path in / /app.js /server-sync.js /intake.js /voice.js /studio.js /quality.js /styles.css /assets/marina.png; do
   [[ "$(curl -sS -b "$test_dir/cookies" -o /dev/null -w '%{http_code}' "$base$path")" == 200 ]] || fail "Falha ao servir $path."
 done
 [[ "$(curl -sS -b "$test_dir/cookies" -o /dev/null -w '%{http_code}' "$base/arquivo-inexistente")" == 404 ]] || fail 'Arquivo inexistente não retornou 404.'
 curl -sS -b "$test_dir/cookies" -D "$test_dir/headers" "$base/" > "$test_dir/page"
 grep -qi 'content-security-policy:' "$test_dir/headers" || fail 'CSP ausente.'
+grep -qi 'microphone=(self)' "$test_dir/headers" || fail 'Microfone bloqueado pela política do servidor.'
 grep -qi 'cache-control: no-store' "$test_dir/headers" || fail 'Controle de cache ausente.'
 grep -qi 'Jhoneme' "$test_dir/page" || fail 'Página inesperada.'
 cat > "$test_dir/state.json" <<'JSON'

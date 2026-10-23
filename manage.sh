@@ -15,6 +15,8 @@ Manutenção da Jhoneme — execute na pasta do pacote:
   sudo bash manage.sh rollback    Voltar à imagem anterior à última atualização.
   sudo bash manage.sh backup      Salvar código, configuração e dados.
   sudo bash manage.sh password    Trocar a senha pelo prompt oculto.
+  sudo bash manage.sh deepgram    Configurar a transcrição por voz (chave oculta).
+  sudo bash manage.sh deepgram --key-file /caminho/chave.txt
   sudo bash manage.sh password --password-file /caminho/senha.txt
   sudo bash manage.sh restore-data /caminho/workspace.json
   sudo bash manage.sh restore-certificates /caminho/certificates.tar.gz
@@ -26,7 +28,7 @@ HELP
 action="${1:-help}"
 [[ $# -eq 0 ]] || shift
 case "$action" in help|--help|-h) usage; exit 0 ;; esac
-case "$action" in start|stop|restart|status|logs|update|rollback|backup|password|restore-data|restore-certificates) ;; *) fail 'Comando desconhecido. Use manage.sh help.' ;; esac
+case "$action" in start|stop|restart|status|logs|update|rollback|backup|password|deepgram|restore-data|restore-certificates) ;; *) fail 'Comando desconhecido. Use manage.sh help.' ;; esac
 require_docker
 configure_compose
 umask 077
@@ -144,6 +146,29 @@ case "$action" in
     compose up -d --force-recreate studio
     wait_healthy
     note 'Senha alterada. O navegador pode pedir as credenciais novamente.' ;;
+  deepgram)
+    if (($#)); then
+      [[ $# -eq 2 && "$1" == --key-file && -r "$2" ]] || fail 'Use deepgram [--key-file ARQUIVO].'
+      deepgram_key="$(cat -- "$2")"
+    elif [[ -t 0 ]]; then
+      read -r -s -p 'Chave Deepgram (entrada oculta): ' deepgram_key; printf '\n'
+    else
+      fail 'Use um terminal interativo ou --key-file.'
+    fi
+    [[ "$deepgram_key" =~ ^[A-Za-z0-9._-]{20,200}$ ]] || fail 'Formato de chave inválido.'
+    temp_env="$(mktemp "$JHONEME_ROOT/.env.tmp.XXXXXX")"
+    trap 'rm -f -- "$temp_env"' EXIT
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      [[ "$line" == DEEPGRAM_API_KEY=* ]] || printf '%s\n' "$line"
+    done < "$JHONEME_ENV_FILE" > "$temp_env"
+    printf "DEEPGRAM_API_KEY='%s'\n" "$deepgram_key" >> "$temp_env"
+    unset deepgram_key
+    chmod 600 "$temp_env"
+    mv -- "$temp_env" "$JHONEME_ENV_FILE"
+    configure_compose
+    compose up -d --force-recreate studio
+    wait_healthy
+    note 'Deepgram configurado. A chave fica somente no servidor.' ;;
   restore-data)
     [[ $# -eq 1 && -f "$1" ]] || fail 'Informe workspace.json extraído de um backup da Jhoneme.'
     backup_studio

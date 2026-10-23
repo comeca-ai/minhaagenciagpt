@@ -21,6 +21,7 @@ services:
     environment:
       JHONEME_MODE: ${JHONEME_MODE:?Execute install.sh primeiro}
       JHONEME_DB_PATH: /agency/jhoneme.sqlite
+      DEEPGRAM_API_KEY: ${DEEPGRAM_API_KEY:-}
       JHONEME_SITE_ADDRESS: ${JHONEME_SITE_ADDRESS:?Execute install.sh primeiro}
       JHONEME_ACME_EMAIL: ${JHONEME_ACME_EMAIL:-admin@localhost}
       JHONEME_ADMIN_USER: ${JHONEME_ADMIN_USER:?Execute install.sh primeiro}

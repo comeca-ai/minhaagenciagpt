@@ -59,7 +59,7 @@ compose() {
   # Shell variables must not silently override the installed configuration.
   env -u COMPOSE_FILE -u COMPOSE_PROJECT_NAME -u COMPOSE_PROFILES \
     -u JHONEME_SITE_ADDRESS -u JHONEME_ACME_EMAIL -u JHONEME_ADMIN_USER \
-    -u JHONEME_PASSWORD_HASH -u JHONEME_MODE -u JHONEME_LOCAL_PORT -u CADDY_IMAGE \
+    -u JHONEME_PASSWORD_HASH -u JHONEME_MODE -u JHONEME_LOCAL_PORT -u CADDY_IMAGE -u DEEPGRAM_API_KEY \
     docker compose --project-directory "$JHONEME_ROOT" --env-file "$JHONEME_ENV_FILE" \
     "${JHONEME_COMPOSE_FILES[@]}" "$@"
 }

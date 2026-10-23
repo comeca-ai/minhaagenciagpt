@@ -28,9 +28,19 @@ Na VPS, use o instalador para ter login e SQLite. Para explorar apenas a prévia
 
 A versão `jhoneme-agency-2.0` integra briefing de negócio, contratos da diretora e dos criadores, contexto por rodada, feedback anterior e régua com seis critérios. Fontes inventadas, ações sem autorização e material ausente bloqueiam aprovação. Consulte [PROMPTS.md](PROMPTS.md) para o fluxo, as referências e os limites da avaliação.
 
-## Configuração guiada
+## Um briefing, por áudio ou texto
 
-Abra **Configurar passo a passo** na navegação. O fluxo conduz por projeto, diretora, briefing da sprint, equipe, prompts/prazo e entrega/avaliação, preservando o ponto de parada nos dados da agência.
+Na recepção, abra **Dar briefing por áudio**. Grave até dois minutos, pare e revise o pedido preenchido antes de salvar. O Deepgram transcreve em português brasileiro. O nome do projeto, a diretora e o prazo explícito são identificados por regras locais; casos ambíguos ficam em branco. A fala completa é preservada. Não há interpretação semântica geral por LLM nesta versão.
+
+O formulário pede somente projeto, diretora, pedido e prazo. Nome da sprint, formato e direcionamentos adicionais são opcionais. O contexto da marca e o perfil já cadastrado acompanham os prompts. O fluxo agora tem três etapas: **Seu pedido → Produção → Entrega**, com migração dos registros anteriores.
+
+A gravação Deepgram funciona na **instalação VPS**, após configurar `DEEPGRAM_API_KEY` somente no servidor. A prévia do Sites permite escrever e testar o preenchimento, mas não possui o proxy de áudio. Não insira a chave em JavaScript ou no navegador.
+
+```bash
+sudo bash manage.sh deepgram
+```
+
+O comando recebe a chave com entrada oculta e reinicia o container. Use HTTPS ou localhost com túnel SSH. Há microfone também nas expectativas do perfil e no pedido da sprint. Nenhum áudio é salvo no banco; apenas o texto aprovado pelo usuário é persistido. O endpoint exige login, mesma origem e limita tamanho e frequência. Detalhes em [INSTALAR-VPS.md](INSTALAR-VPS.md).
 
 ## O que funciona
 
