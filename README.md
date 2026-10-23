@@ -7,12 +7,22 @@ Aplicativo visual em português para configurar uma agência de agentes de IA: r
 O pacote inclui `Dockerfile`, Docker Compose, `install.sh` e `manage.sh`. Veja **[INSTALAR-VPS.md](INSTALAR-VPS.md)** para instalação com domínio/HTTPS, acesso local, backup, atualização e migração dos dados do navegador.
 
 ```bash
-sudo bash install.sh --install-docker --domain agencia.seudominio.com --email voce@seudominio.com
+sudo bash install.sh --install-docker --domain agencia.seudominio.com --email voce@seudominio.com --user Jhoneme
 ```
+
+Para instalar **somente Docker Engine e Docker Compose** em Ubuntu/Debian, use o script incluído no repositório: **[scripts/install-docker.sh](scripts/install-docker.sh)**.
+
+```bash
+git clone https://github.com/comeca-ai/minhaagenciagpt.git
+cd minhaagenciagpt
+sudo bash scripts/install-docker.sh
+```
+
+O script usa o repositório oficial do Docker e inicia o serviço. Ele preserva instalações existentes; não remove outros runtimes de containers. Para instalar a agência junto, use `install.sh --install-docker` como acima.
 
 ## Usar
 
-O aplicativo está em `dist/` e não exige compilação. Sirva essa pasta com um servidor de arquivos estáticos. Também é possível abrir `dist/index.html` para explorar; a persistência de arquivos locais varia conforme o navegador.
+Na VPS, use o instalador para ter login e SQLite. Para explorar apenas a prévia estática, sirva `dist/` com um servidor de arquivos; essa modalidade usa dados locais do navegador e não exige compilação.
 
 ## Prompts de conteúdo e monetização
 
