@@ -15,7 +15,7 @@ cleanup() {
   rm -rf -- "$test_dir"
 }
 trap cleanup EXIT
-cp -R "$JHONEME_ROOT/dist" "$JHONEME_ROOT/deploy" "$JHONEME_ROOT/server" "$test_dir/"
+cp -R "$JHONEME_ROOT/public" "$JHONEME_ROOT/deploy" "$JHONEME_ROOT/server" "$test_dir/"
 cp "$JHONEME_ROOT/Dockerfile" "$JHONEME_ROOT/.dockerignore" "$JHONEME_ROOT/compose.yaml" "$JHONEME_ROOT/compose.local.yaml" "$test_dir/"
 docker pull caddy:2-alpine
 test_password='Jhoneme-smoke-password'

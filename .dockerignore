@@ -2,7 +2,7 @@
 !Dockerfile
 !deploy/
 !deploy/Caddyfile
-!dist/
-!dist/**
+!public/
+!public/**
 !server/
 !server/**

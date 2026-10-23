@@ -21,3 +21,14 @@ __pycache__/
 jhoneme-db-*/
 jhoneme-persist-*/
 jhoneme-backup-*/
+
+/dist/
+/.next/
+/.vinext/
+/.wrangler/
+/.sites-runtime/
+.dev.vars*
+next-env.d.ts
+*.tsbuildinfo
+
+/node-compile-cache/

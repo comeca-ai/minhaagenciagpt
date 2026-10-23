@@ -55,7 +55,7 @@ A agência tem um único espaço compartilhado pela conta da direção. Os dados
 
 O banco usa uma revisão atômica do documento da agência, além de tabelas para sessões e metadados. É uma primeira versão leve; não oferece consultas analíticas por entidade ou histórico completo de cada revisão. O limite de gravação é 8 MB, incluindo imagens próprias.
 
-**Migrar da prévia:** exporte o JSON em **Histórico & dados** no site anterior e restaure-o na VPS. A prévia estática do Sites continua usando armazenamento do navegador e acesso privado do ChatGPT; o banco da VPS não é conectado automaticamente àquela prévia. A restauração substitui o espaço atual, após a confirmação mostrada pelo aplicativo.
+**Migrar da prévia:** exporte o JSON em **Histórico & dados** no site anterior e restaure-o na VPS. A versão do Sites continua usando armazenamento do navegador e acesso privado do ChatGPT; o banco da VPS não é conectado automaticamente àquela prévia. A restauração substitui o espaço atual, após a confirmação mostrada pelo aplicativo.
 
 ## Manutenção
 
@@ -93,7 +93,7 @@ Use HTTPS ou localhost via túnel SSH e permita o microfone no navegador. O limi
 
 O servidor solicita Nova-3, `language=pt-BR`, formatação e `mip_opt_out=true`. Áudio e resposta bruta não são gravados no banco nem em logs da aplicação. Só o texto que você aprovar vai para o pedido. O Deepgram mantém os metadados de uso conforme sua política. Referências: https://developers.deepgram.com/docs/pre-recorded-audio e https://developers.deepgram.com/trust-security/your-data.
 
-A prévia estática do Sites continua sem um backend de transcrição. Nela, o preenchimento pode ser experimentado com texto; o botão informa que o áudio exige a instalação VPS.
+O Sites possui um backend próprio de transcrição e uma configuração secreta independente da VPS. Configurar a chave no Sites não preenche o `.env` de um clone local. Se aparecer “Ative o Deepgram nesta instalação”, execute `sudo bash manage.sh deepgram` na pasta do clone; o comando recria o container com a chave. Recarregue a página após terminar.
 
 ## Atualizar e reverter
 

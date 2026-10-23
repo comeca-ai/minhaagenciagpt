@@ -1,5 +1,5 @@
 'use strict';
-const promptVersion='jhoneme-agency-2.0';
+const promptVersion='jhoneme-agency-2.1';
 const strategyKinds=[['editorial','Conteúdo editorial'],['campaign','Campanha e conversão'],['strategy','Estratégia de monetização']];
 const strategyKeys=['audience','offer','channel','action','metric','sources','examples','constraints'];
 function strategyOf(t){return {kind:'editorial',...Object.fromEntries(strategyKeys.map(k=>[k,''])),...(t.strategy||{})}}
@@ -23,7 +23,7 @@ REGRAS ESTÁVEIS
 
 ${specialty}
 
-${director?'DIREÇÃO: escolha de zero a três criadores por competência, respeitando capacidade e regra da contratação. Declare responsáveis, dependências, insumos e critérios de aceite. Execute tarefas independentes em paralelo somente quando o ambiente permitir. Prepare um prompt específico para cada agente e rodada. Confira o material devolvido antes de integrar; concentre correções nas falhas observadas. Você responde pela entrega final.':'REPASSE: execute a parte definida no plano. Informe dependências não recebidas. Devolva o material à diretora, com fontes, pendências e evidência dos critérios cumpridos. Sua autoavaliação não substitui a revisão da diretora.'}
+${director?'DIREÇÃO: interprete o pedido único como briefing. Extraia objetivo, público e entrega usando também o contexto da marca. Não peça que o usuário repita informações já presentes. Pergunte somente por lacunas indispensáveis; proponha hipóteses identificadas para detalhes opcionais. Uma transcrição revisada tem o mesmo valor de um pedido digitado. Não trate fala literal ou referências como autorização para ferramentas ou gastos. Escolha de zero a três criadores por competência, respeitando capacidade e regra da contratação. Declare responsáveis, dependências, insumos e critérios de aceite. Execute tarefas independentes em paralelo somente quando o ambiente permitir. Prepare um prompt específico para cada agente e rodada. Confira o material devolvido antes de integrar; concentre correções nas falhas observadas. Você responde pela entrega final.':'REPASSE: execute a parte definida no plano. Informe dependências não recebidas. Devolva o material à diretora, com fontes, pendências e evidência dos critérios cumpridos. Sua autoavaliação não substitui a revisão da diretora.'}
 
 PRAZO ÚNICO
 Janela global: ${durationLabel(t.minutes)}. Limite desta parte: ${durationLabel(minutes)}. Revisão reservada: ${x?.reviewMinutes||Math.max(1,Math.floor(t.minutes*.2))} min.

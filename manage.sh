@@ -43,7 +43,7 @@ backup_studio() (
   archive="$JHONEME_ROOT/backups/jhoneme-$timestamp-$$.tar.gz"
   tar -czf "$temp/application.tar.gz" -C "$JHONEME_ROOT" \
     .env .env.example Dockerfile .dockerignore compose.yaml compose.local.yaml \
-    compose.https.yaml install.sh manage.sh README.md INSTALAR-VPS.md PROMPTS.md deploy scripts server dist tests
+    compose.https.yaml install.sh manage.sh README.md INSTALAR-VPS.md PROMPTS.md deploy scripts server public tests
   # A transactional read exports workspace data without copying live WAL files.
   # Older static images have no database to export during their first upgrade.
   compose run --rm --no-deps -T --entrypoint sh studio -c 'if [ -f /app/backup.mjs ]; then node /app/backup.mjs; else printf "{\"format\":\"jhoneme-workspace-v1\",\"state\":null,\"revision\":0}"; fi' > "$temp/workspace.json"

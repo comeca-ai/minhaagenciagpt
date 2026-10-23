@@ -22,7 +22,7 @@ O script usa o repositório oficial do Docker e inicia o serviço. Ele preserva 
 
 ## Usar
 
-Na VPS, use o instalador para ter login e SQLite. Para explorar apenas a prévia estática, sirva `dist/` com um servidor de arquivos; essa modalidade usa dados locais do navegador e não exige compilação.
+Na VPS, use o instalador para ter login e SQLite. Para explorar apenas a prévia estática, sirva `public/` com um servidor de arquivos; essa modalidade usa dados locais do navegador e não exige compilação.
 
 ## Prompts de conteúdo e monetização
 
@@ -34,7 +34,7 @@ Na recepção, abra **Dar briefing por áudio**. Grave até dois minutos, pare e
 
 O formulário pede somente projeto, diretora, pedido e prazo. Nome da sprint, formato e direcionamentos adicionais são opcionais. O contexto da marca e o perfil já cadastrado acompanham os prompts. O fluxo agora tem três etapas: **Seu pedido → Produção → Entrega**, com migração dos registros anteriores.
 
-A gravação Deepgram funciona na **instalação VPS**, após configurar `DEEPGRAM_API_KEY` somente no servidor. A prévia do Sites permite escrever e testar o preenchimento, mas não possui o proxy de áudio. Não insira a chave em JavaScript ou no navegador.
+A gravação Deepgram funciona no **Sites e na instalação VPS**, com `DEEPGRAM_API_KEY` configurada somente no servidor de cada ambiente. No Sites, use as variáveis secretas de produção. Na VPS/local, execute `sudo bash manage.sh deepgram` e informe a chave pelo prompt oculto. O clone do GitHub não inclui credenciais. Não insira a chave no JavaScript.
 
 ```bash
 sudo bash manage.sh deepgram
@@ -63,11 +63,11 @@ O comando recebe a chave com entrada oculta e reinicia o container. Use HTTPS ou
 
 ## Limites desta versão
 
-É um estúdio com persistência SQLite na VPS e uma prévia estática no Sites, sem motor de IA conectado. Não executa agentes, não contrata pessoas, não instala ferramentas e não gera respostas autônomas. As avaliações, os planos e os materiais são registros manuais; não há notas ou entregas simuladas. Os rascunhos de prompt são montados com os dados da agência, não otimizados por um modelo.
+É um estúdio com persistência SQLite na VPS e uma versão hospedada no Sites, sem motor de IA conectado. Não executa agentes, não contrata pessoas, não instala ferramentas e não gera respostas autônomas. As avaliações, os planos e os materiais são registros manuais; não há notas ou entregas simuladas. Os rascunhos de prompt são montados com os dados da agência, não otimizados por um modelo.
 
 Registrar uma janela não cria um trabalho em segundo plano. Para operação real, o backend precisa receber e impor um prazo absoluto comum aos agentes e ferramentas, persistir eventos, gerenciar cancelamento e reservar revisão dentro desse limite.
 
-Na VPS, os dados ficam no SQLite em volume Docker e são carregados em qualquer dispositivo após o login. Gravações concorrentes são protegidas por revisão, sem atualização em tempo real. A prévia estática usa `localStorage`; exporte e importe o JSON para migrar. O backup da VPS inclui o banco. Há uma porta visual com login, sem cadastro público, e sessões de até oito horas. Nenhuma senha é publicada no código.
+Na VPS, os dados ficam no SQLite em volume Docker e são carregados em qualquer dispositivo após o login. Gravações concorrentes são protegidas por revisão, sem atualização em tempo real. O Sites usa `localStorage`; exporte e importe o JSON para migrar. O backup da VPS inclui o banco. Há uma porta visual com login, sem cadastro público, e sessões de até oito horas. Nenhuma senha é publicada no código.
 
 ## Contrato para a futura orquestração
 
@@ -89,14 +89,20 @@ Os testes verificam as telas, migração de dados, prazos variáveis, limite de 
 
 ## Estrutura
 
-- `dist/app.js`: estrutura anterior, navegação, persistência e backups.
-- `dist/studio.js`: equipe, projetos e reuniões.
-- `dist/agency.js`: recepção, pautas, ferramentas e exportações.
-- `dist/direction.js`: vínculos, substituição e histórico de diretoras por projeto.
-- `dist/prompts.js`: contratos operacionais e contexto de conteúdo e negócio.
-- `dist/quality.js`: prazo global, repasses, prompts e avaliações.
-- `dist/styles.css`, `studio.css`, `jhoneme.css`: estilos e adaptação a telas menores.
-- `dist/assets/`: retratos fictícios e imagem conceitual gerados para o projeto.
+- `public/app.js`: estrutura anterior, navegação, persistência e backups.
+- `public/studio.js`: equipe, projetos e reuniões.
+- `public/agency.js`: recepção, pautas, ferramentas e exportações.
+- `public/direction.js`: vínculos, substituição e histórico de diretoras por projeto.
+- `public/prompts.js`: contratos operacionais e contexto de conteúdo e negócio.
+- `public/quality.js`: prazo global, repasses, prompts e avaliações.
+- `public/styles.css`, `studio.css`, `jhoneme.css`: estilos e adaptação a telas menores.
+- `public/assets/`: retratos fictícios e imagem conceitual gerados para o projeto.
 - `tests/agency.test.cjs`: verificações sem dependências externas.
 
 Nenhuma chave SSH, token, segredo ou dado de cliente deve ser adicionado ao repositório. Conversas e backups pessoais também ficam fora do código publicado.
+
+## Entrada por voz
+
+O site hospedado usa o login privado do Sites. O backend da VPS continua com login e SQLite. Configure `DEEPGRAM_API_KEY` como segredo do servidor para transcrever áudio com Nova-3 em português. No Sites, a chave fica nas variáveis secretas de produção; na VPS, em `.env` fora do Git. Reinicie o serviço após configurá-la. O áudio é enviado apenas após Parar e transcrever, até 2 minutos / 6 MB por gravação, e não é armazenado pela agência. Na recepção, parar abre a revisão do pedido preenchido. Nos demais campos, você revisa e aplica a transcrição. Nada inicia uma sprint automaticamente.
+
+`public/` contém a interface compartilhada pelo Sites e pela VPS. `app/api/transcribe/route.ts` atende o Sites; `server/http.mjs` atende a VPS, ambos usando `server/transcribe.mjs`. Execute `npm run build` para o Sites. A transcrição não conecta automaticamente a produção de agentes ao n8n.

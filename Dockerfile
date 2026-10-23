@@ -12,7 +12,7 @@ RUN apk add --no-cache ca-certificates \
     && chmod 700 /agency \
     && chown -R 10001:10001 /data /config /srv /agency /app
 
-COPY --chown=10001:10001 dist/ /srv/
+COPY --chown=10001:10001 public/ /srv/
 COPY deploy/Caddyfile /etc/caddy/Caddyfile
 COPY --chown=10001:10001 server/ /app/
 ENV XDG_DATA_HOME=/data XDG_CONFIG_HOME=/config

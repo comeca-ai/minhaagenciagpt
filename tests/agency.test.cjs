@@ -2,7 +2,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const assert=require('node:assert/strict');
 const path=require('node:path');
-const root=path.resolve(__dirname,'../dist');
+const root=path.resolve(__dirname,'../public');
 function boot(saved){
  const elements=new Map(),handlers=new Map(),storage=new Map();if(saved)storage.set('agencia-jhonata-workspace-v1',JSON.stringify(saved));
  const el=id=>{if(!elements.has(id))elements.set(id,{innerHTML:'',textContent:'',classList:{add(){},remove(){}},addEventListener(){},focus(){},showModal(){this.open=true},close(){this.open=false}});return elements.get(id)};
@@ -56,7 +56,7 @@ let generated=run("promptFor(studio().tasks[0],'caio',40)");
 assert.ok(generated.includes('Assinatura mensal'));
 assert.ok(generated.includes('Newsletter'));
 assert.ok(generated.includes('MONETIZAÇÃO:'));
-assert.ok(generated.includes('jhoneme-agency-2.0'));
+assert.ok(generated.includes('jhoneme-agency-2.1'));
 run("studio().tasks[0].strategy.kind='editorial'");
 assert.ok(run("promptFor(studio().tasks[0],'caio',40)").includes('independência editorial'));
 run("studio().tasks[0].brief='b'.repeat(10000);studio().tasks[0].strategy.sources='s'.repeat(10000)");

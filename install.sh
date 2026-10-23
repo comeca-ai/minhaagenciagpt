@@ -48,7 +48,7 @@ while (($#)); do
     *) fail "Opção desconhecida: $1. Use --help." ;;
   esac
 done
-[[ -f "$JHONEME_ROOT/dist/index.html" && -f "$JHONEME_ROOT/deploy/Caddyfile" ]] || fail 'Pacote incompleto. Extraia todo o ZIP antes de instalar.'
+[[ -f "$JHONEME_ROOT/public/index.html" && -f "$JHONEME_ROOT/deploy/Caddyfile" ]] || fail 'Pacote incompleto. Extraia todo o ZIP antes de instalar.'
 if [[ ! -f "$JHONEME_ENV_FILE" ]]; then
   valid_user "$admin_user" || fail 'Use um nome de usuário de até 40 letras, números, ponto, hífen ou sublinhado.'
   valid_port "$port" || fail 'A porta deve estar entre 1 e 65535.'

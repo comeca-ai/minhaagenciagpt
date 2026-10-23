@@ -20,8 +20,8 @@ class InstallerTests(unittest.TestCase):
                      "compose.yaml", "compose.local.yaml", "compose.https.yaml"):
             src, dst = ROOT / name, self.root / name
             shutil.copytree(src, dst) if src.is_dir() else shutil.copy(src, dst)
-        (self.root / "dist").mkdir()
-        (self.root / "dist/index.html").write_text("Jhoneme")
+        (self.root / "public").mkdir()
+        (self.root / "public/index.html").write_text("Jhoneme")
         (self.root / "bin").mkdir()
         docker = self.root / "bin/docker"
         docker.write_text('''#!/usr/bin/env python3
