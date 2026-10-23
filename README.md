@@ -22,7 +22,7 @@ O script usa o repositório oficial do Docker e inicia o serviço. Ele preserva 
 
 ## Usar
 
-Na VPS, use o instalador para ter login e SQLite. Para explorar apenas a prévia estática, sirva `public/` com um servidor de arquivos; essa modalidade usa dados locais do navegador e não exige compilação.
+Na VPS, use o instalador para ter login e SQLite. No Sites, a interface usa login privado e D1. A interface precisa de um desses backends para salvar e reabrir os desafios.
 
 ## Prompts de conteúdo e monetização
 
@@ -69,7 +69,7 @@ O comando recebe a chave com entrada oculta e reinicia o container. Use HTTPS ou
 
 Registrar uma janela não cria um trabalho em segundo plano. Para operação real, o backend precisa receber e impor um prazo absoluto comum aos agentes e ferramentas, persistir eventos, gerenciar cancelamento e reservar revisão dentro desse limite.
 
-Na VPS, os dados ficam no SQLite em volume Docker e são carregados em qualquer dispositivo após o login. Gravações concorrentes são protegidas por revisão, sem atualização em tempo real. O Sites usa D1, separado por usuário autenticado, com migrações em `drizzle/`. Na primeira abertura com banco vazio, importa os registros válidos deste navegador; um banco preenchido sempre prevalece. O estado é salvo em blocos limitados por tamanho, em uma transação com controle de revisão. Links de desafios são privados e exigem o mesmo acesso à agência. A prévia estática continua usando `localStorage`. O backup da VPS inclui o banco. Há uma porta visual com login, sem cadastro público, e sessões de até oito horas. Nenhuma senha é publicada no código.
+Na VPS, os dados ficam no SQLite em volume Docker e são carregados em qualquer dispositivo após o login. Gravações concorrentes são protegidas por revisão, sem atualização em tempo real. O Sites usa D1, separado por usuário autenticado, com migrações em `drizzle/`. Na primeira abertura com banco vazio, importa os registros válidos deste navegador; um banco preenchido sempre prevalece. O estado é salvo em blocos limitados por tamanho, em uma transação com controle de revisão. Links de desafios são privados e exigem o mesmo acesso à agência. O backup da VPS inclui o banco. Há uma porta visual com login, sem cadastro público, e sessões de até oito horas. Nenhuma senha é publicada no código.
 
 ## Contrato para a futura orquestração
 
