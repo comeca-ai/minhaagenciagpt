@@ -121,7 +121,7 @@ case "$action" in
     size="$(LC_ALL=C printf '%s' "$password" | wc -c)"
     ((size>=12 && size<=72)) || fail 'A senha deve ter de 12 a 72 bytes.'
     [[ "$password" != *$'\n'* && "$password" != *$'\r'* ]] || fail 'A senha deve ter uma única linha.'
-    new_hash="$(printf '%s' "$password" | compose run --rm --no-deps -T --entrypoint caddy studio hash-password --algorithm bcrypt)"
+    new_hash="$(printf '%s\n' "$password" | compose run --rm --no-deps -T --entrypoint caddy studio hash-password --algorithm bcrypt)"
     unset password
     valid_hash "$new_hash" || fail 'Não foi possível gerar um hash válido.'
     temp_env="$(mktemp "$JHONEME_ROOT/.env.tmp.XXXXXX")"

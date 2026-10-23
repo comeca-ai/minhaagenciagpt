@@ -19,7 +19,7 @@ cp -R "$JHONEME_ROOT/dist" "$JHONEME_ROOT/deploy" "$test_dir/"
 cp "$JHONEME_ROOT/Dockerfile" "$JHONEME_ROOT/.dockerignore" "$JHONEME_ROOT/compose.yaml" "$JHONEME_ROOT/compose.local.yaml" "$test_dir/"
 docker pull caddy:2-alpine
 test_password='Jhoneme-smoke-password'
-test_hash="$(printf '%s' "$test_password" | docker run --rm -i --entrypoint caddy caddy:2-alpine hash-password --algorithm bcrypt)"
+test_hash="$(printf '%s\n' "$test_password" | docker run --rm -i --entrypoint caddy caddy:2-alpine hash-password --algorithm bcrypt)"
 valid_hash "$test_hash" || fail 'Falha ao gerar hash.'
 umask 077
 cat > "$test_dir/.env" <<ENV

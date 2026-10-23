@@ -30,7 +30,9 @@ a = sys.argv[1:]
 with open(os.environ["DOCKER_TEST_LOG"], "a") as f:
     f.write(json.dumps(a) + "\\n")
 if "hash-password" in a:
-    sys.stdin.read()
+    supplied = sys.stdin.read()
+    if not supplied.endswith("\\n"):
+        sys.exit(1)
     print(os.environ["DOCKER_TEST_HASH"])
 elif a and a[0] == "inspect":
     print(os.environ.get("DOCKER_TEST_HEALTH", "healthy"))

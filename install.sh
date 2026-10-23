@@ -93,7 +93,7 @@ else
   [[ "$password" != *$'\n'* && "$password" != *$'\r'* ]] || fail 'A senha deve ter uma única linha.'
   note 'Preparando a imagem oficial do servidor e protegendo a senha...'
   docker pull caddy:2-alpine
-  password_hash="$(printf '%s' "$password" | docker run --rm -i --entrypoint caddy caddy:2-alpine hash-password --algorithm bcrypt)"
+  password_hash="$(printf '%s\n' "$password" | docker run --rm -i --entrypoint caddy caddy:2-alpine hash-password --algorithm bcrypt)"
   unset password
   valid_hash "$password_hash" || fail 'O servidor não retornou um hash bcrypt válido. A instalação foi interrompida.'
   site_address='http://:8080'
