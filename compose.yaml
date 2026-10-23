@@ -19,11 +19,14 @@ services:
     tmpfs:
       - /tmp:size=32m,mode=1777
     environment:
+      JHONEME_MODE: ${JHONEME_MODE:?Execute install.sh primeiro}
+      JHONEME_DB_PATH: /agency/jhoneme.sqlite
       JHONEME_SITE_ADDRESS: ${JHONEME_SITE_ADDRESS:?Execute install.sh primeiro}
       JHONEME_ACME_EMAIL: ${JHONEME_ACME_EMAIL:-admin@localhost}
       JHONEME_ADMIN_USER: ${JHONEME_ADMIN_USER:?Execute install.sh primeiro}
       JHONEME_PASSWORD_HASH: ${JHONEME_PASSWORD_HASH:?Execute install.sh primeiro}
     volumes:
+      - agency_data:/agency
       - caddy_data:/data
       - caddy_config:/config
     logging:
@@ -32,5 +35,6 @@ services:
         max-size: 10m
         max-file: "3"
 volumes:
+  agency_data:
   caddy_data:
   caddy_config:

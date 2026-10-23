@@ -16,3 +16,8 @@ backups/
 .env.tmp.*
 jhoneme-test-*/
 __pycache__/
+
+*.sqlite*
+jhoneme-db-*/
+jhoneme-persist-*/
+jhoneme-backup-*/

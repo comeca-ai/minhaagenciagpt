@@ -7,25 +7,26 @@ usage() {
 Manutenção da Jhoneme — execute na pasta do pacote:
 
   sudo bash manage.sh start       Iniciar e verificar o container.
-  sudo bash manage.sh stop        Parar, preservando configuração e certificados.
+  sudo bash manage.sh stop        Parar, preservando configuração e dados.
   sudo bash manage.sh restart     Recriar com as configurações atuais.
   sudo bash manage.sh status      Mostrar estado e endereço.
   sudo bash manage.sh logs        Acompanhar logs (Ctrl+C para sair).
   sudo bash manage.sh update      Fazer backup e reconstruir o código local.
   sudo bash manage.sh rollback    Voltar à imagem anterior à última atualização.
-  sudo bash manage.sh backup      Salvar código, configuração e certificados.
+  sudo bash manage.sh backup      Salvar código, configuração e dados.
   sudo bash manage.sh password    Trocar a senha pelo prompt oculto.
   sudo bash manage.sh password --password-file /caminho/senha.txt
+  sudo bash manage.sh restore-data /caminho/workspace.json
   sudo bash manage.sh restore-certificates /caminho/certificates.tar.gz
 
-O backup da VPS NÃO contém briefings ou perfis salvos no navegador.
-Exporte esses dados pelo aplicativo em Histórico & dados.
+O backup inclui os dados SQLite da VPS. Dados da prévia no navegador
+precisam ser importados pelo aplicativo antes.
 HELP
 }
 action="${1:-help}"
 [[ $# -eq 0 ]] || shift
 case "$action" in help|--help|-h) usage; exit 0 ;; esac
-case "$action" in start|stop|restart|status|logs|update|rollback|backup|password|restore-certificates) ;; *) fail 'Comando desconhecido. Use manage.sh help.' ;; esac
+case "$action" in start|stop|restart|status|logs|update|rollback|backup|password|restore-data|restore-certificates) ;; *) fail 'Comando desconhecido. Use manage.sh help.' ;; esac
 require_docker
 configure_compose
 umask 077
@@ -40,16 +41,18 @@ backup_studio() (
   archive="$JHONEME_ROOT/backups/jhoneme-$timestamp-$$.tar.gz"
   tar -czf "$temp/application.tar.gz" -C "$JHONEME_ROOT" \
     .env .env.example Dockerfile .dockerignore compose.yaml compose.local.yaml \
-    compose.https.yaml install.sh manage.sh README.md INSTALAR-VPS.md PROMPTS.md deploy scripts dist tests
-  # Snapshot only Caddy storage. No browser workspace data lives in these volumes.
+    compose.https.yaml install.sh manage.sh README.md INSTALAR-VPS.md PROMPTS.md deploy scripts server dist tests
+  # A transactional read exports workspace data without copying live WAL files.
+  # Older static images have no database to export during their first upgrade.
+  compose run --rm --no-deps -T --entrypoint sh studio -c 'if [ -f /app/backup.mjs ]; then node /app/backup.mjs; else printf "{\"format\":\"jhoneme-workspace-v1\",\"state\":null,\"revision\":0}"; fi' > "$temp/workspace.json"
   compose run --rm --no-deps -T --entrypoint tar studio -czf - -C / data config > "$temp/certificates.tar.gz"
   printf '%s\n' \
     'Backup Jhoneme: application.tar.gz contém código e configuração.' \
     'certificates.tar.gz contém os volumes de certificados do Caddy.' \
     'Contém hashes de acesso e chaves TLS. Mantenha este arquivo privado.' \
-    'NÃO inclui dados do localStorage: exporte o backup JSON dentro do aplicativo.' \
+    'workspace.json contém projetos, perfis, tarefas, reuniões e avaliações do banco. Sessões não são exportadas.' \
     'Restauração: siga INSTALAR-VPS.md na pasta da aplicação.' > "$temp/META.txt"
-  tar -czf "$archive" -C "$temp" application.tar.gz certificates.tar.gz META.txt
+  tar -czf "$archive" -C "$temp" application.tar.gz certificates.tar.gz workspace.json META.txt
   chmod 600 "$archive"
   note "Backup criado: $archive"
 )
@@ -100,7 +103,7 @@ case "$action" in
     docker image tag jhoneme-studio:previous jhoneme-studio:local
     compose up -d --force-recreate studio
     wait_healthy
-    note 'Imagem anterior restaurada. Configuração e dados locais do navegador não foram alterados.' ;;
+    note 'Imagem anterior restaurada. Configuração e banco foram preservados. Versões antigas podem não ler o banco novo.' ;;
   password)
     password_file=''
     if (($#)); then
@@ -111,7 +114,7 @@ case "$action" in
       [[ -r "$password_file" ]] || fail 'Arquivo de senha não encontrado.'
       password="$(cat -- "$password_file")"
     elif [[ -t 0 ]]; then
-      read -r -s -p 'Nova senha (12 a 72 bytes): ' password; printf '\n'
+      read -r -s -p 'Nova senha (8 a 72 bytes): ' password; printf '\n'
       read -r -s -p 'Repita a senha: ' confirmation; printf '\n'
       [[ "$password" == "$confirmation" ]] || fail 'As senhas não coincidem.'
       unset confirmation
@@ -119,7 +122,7 @@ case "$action" in
       fail 'Use um terminal interativo ou --password-file.'
     fi
     size="$(LC_ALL=C printf '%s' "$password" | wc -c)"
-    ((size>=12 && size<=72)) || fail 'A senha deve ter de 12 a 72 bytes.'
+    ((size>=8 && size<=72)) || fail 'A senha deve ter de 8 a 72 bytes.'
     [[ "$password" != *$'\n'* && "$password" != *$'\r'* ]] || fail 'A senha deve ter uma única linha.'
     new_hash="$(printf '%s\n' "$password" | compose run --rm --no-deps -T --entrypoint caddy studio hash-password --algorithm bcrypt)"
     unset password
@@ -141,6 +144,13 @@ case "$action" in
     compose up -d --force-recreate studio
     wait_healthy
     note 'Senha alterada. O navegador pode pedir as credenciais novamente.' ;;
+  restore-data)
+    [[ $# -eq 1 && -f "$1" ]] || fail 'Informe workspace.json extraído de um backup da Jhoneme.'
+    backup_studio
+    compose stop studio
+    compose run --rm --no-deps -T --entrypoint node studio /app/restore.mjs < "$1"
+    start_studio
+    note 'Banco restaurado. O backup anterior está em backups/.' ;;
   restore-certificates)
     [[ $# -eq 1 && -f "$1" ]] || fail 'Informe certificates.tar.gz extraído de um backup da Jhoneme.'
     certificate_archive="$(cd -- "$(dirname -- "$1")" && pwd)/$(basename -- "$1")"

@@ -7,13 +7,13 @@ function boot(saved){
  const elements=new Map(),handlers=new Map(),storage=new Map();if(saved)storage.set('agencia-jhonata-workspace-v1',JSON.stringify(saved));
  const el=id=>{if(!elements.has(id))elements.set(id,{innerHTML:'',textContent:'',classList:{add(){},remove(){}},addEventListener(){},focus(){},showModal(){this.open=true},close(){this.open=false}});return elements.get(id)};
  const context={structuredClone,URL,Blob,FormData,setTimeout(){},clearTimeout(){},crypto:require('node:crypto').webcrypto,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},document:{getElementById:el,addEventListener(event,fn){if(!handlers.has(event))handlers.set(event,[]);handlers.get(event).push(fn)}},window:{scrollTo(){},addEventListener(){}},location:{hash:''},console};
- vm.createContext(context);for(const f of ['studio.js','agency.js','advisor.js','direction.js','prompts.js','quality.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
+ vm.createContext(context);for(const f of ['studio.js','agency.js','advisor.js','direction.js','prompts.js','quality.js','setup.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
  const run=s=>vm.runInContext(s,context);return {run,el,storage,handlers};
 }
 const {run,el,storage,handlers}=boot();
 assert.equal(run('isState(initial)'),true);
 assert.equal(run('isState(state)'),true);
-for(const page of ['reception','team','room','projects','tasks','approvals','overview','map','agents','flows','adjustments','settings']){run(`nav('${page}')`);assert.ok(el('app').innerHTML.includes('<main'),page);assert.ok(!el('app').innerHTML.includes('undefined'),page);}
+for(const page of ['reception','setup','team','room','projects','tasks','approvals','overview','map','agents','flows','adjustments','settings']){run(`nav('${page}')`);assert.ok(el('app').innerHTML.includes('<main'),page);assert.ok(!el('app').innerHTML.includes('undefined'),page);}
 // Old backups remain usable without replacing any user customization.
 const legacy=run('structuredClone(initial)');legacy.areas[0].name='Direção escolhida pelo usuário';
 const migrated=boot(legacy);assert.equal(migrated.run('state.areas[0].name'),'Direção escolhida pelo usuário');assert.equal(migrated.run('state.studio.people.length'),5);assert.equal(migrated.run('state.studio.tasks.length'),0);
@@ -107,4 +107,17 @@ assert.equal(run('studio().meetings[0].entries.length'),0);
 assert.equal(run('studio().tasks[0].director'),beforeAdvisorDirector);
 assert.ok(run('meetingExport(studio().meetings[0])').includes('Não entra automaticamente'));
 assert.equal(run('isState(state)'),true);
-console.log('OK — 12 telas; migração sem perda; prazo por tarefa; diretora responsável; limite de 3 criadores; entrega exige material; autorização registrada; exportação; dados inválidos e injeção rejeitados.');
+// Guided setup never advances before the current configuration exists.
+const guided=boot();guided.run("nav('setup')");
+assert.equal(guided.run('setupReady(0)'),true);
+assert.equal(guided.run('setupReady(1)'),false);
+assert.equal(guided.run('setupGo(2)'),false);
+assert.equal(guided.run('setupOf().step'),0);
+assert.equal(guided.run('setupGo(1)'),true);
+guided.run("person('marina').status='Aprovado';changeProjectDirector('pr-isenta','','marina','Primeira diretora',false)");
+assert.equal(guided.run('setupReady(1)'),true);
+assert.equal(guided.run('setupGo(2)'),true);
+assert.equal(guided.run('setupGo(3)'),false);
+assert.ok(guided.el('app').innerHTML.includes('Objetivo e contexto'));
+assert.equal(guided.run('isState(state)'),true);
+console.log('OK — 13 telas; migração sem perda; prazo por tarefa; diretora responsável; limite de 3 criadores; entrega exige material; autorização registrada; exportação; dados inválidos e injeção rejeitados.');

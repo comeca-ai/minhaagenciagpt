@@ -16,6 +16,11 @@ jobs:
           persist-credentials: false
       - name: Contratos e interface
         run: node tests/agency.test.cjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Banco e sessões
+        run: node --test tests/server.test.mjs tests/sync.test.cjs
       - name: Fluxo do instalador
         run: python3 tests/deployment.test.py
       - name: Sintaxe dos scripts

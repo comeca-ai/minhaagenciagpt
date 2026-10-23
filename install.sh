@@ -79,7 +79,7 @@ else
   if [[ -n "$password_file" ]]; then
     password="$(cat -- "$password_file")"
   elif [[ -t 0 ]]; then
-    read -r -s -p "Senha para $admin_user (12 a 72 bytes): " password
+    read -r -s -p "Senha para $admin_user (8 a 72 bytes): " password
     printf '\n'
     read -r -s -p 'Repita a senha: ' password_confirm
     printf '\n'
@@ -89,7 +89,7 @@ else
     fail 'Sem terminal interativo. Informe --password-file com um arquivo protegido contendo a senha.'
   fi
   password_size="$(LC_ALL=C printf '%s' "$password" | wc -c)"
-  ((password_size>=12 && password_size<=72)) || fail 'Use uma senha entre 12 e 72 bytes.'
+  ((password_size>=8 && password_size<=72)) || fail 'Use uma senha entre 8 e 72 bytes.'
   [[ "$password" != *$'\n'* && "$password" != *$'\r'* ]] || fail 'A senha deve ter uma única linha.'
   note 'Preparando a imagem oficial do servidor e protegendo a senha...'
   docker pull caddy:2-alpine

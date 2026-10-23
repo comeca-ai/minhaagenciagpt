@@ -9,15 +9,20 @@
 # Container-only health endpoint; this port is never published.
 http://127.0.0.1:8081 {
 	bind 127.0.0.1
-	respond /healthz "ok" 200
+	reverse_proxy /healthz 127.0.0.1:3000
 }
 
-{$JHONEME_SITE_ADDRESS:http://:8080} {
-	root * /srv
-	encode zstd gzip
+# Password verification is internal; only the session login is public.
+http://127.0.0.1:8082 {
+	bind 127.0.0.1
 	basic_auth {
 		{$JHONEME_ADMIN_USER} {$JHONEME_PASSWORD_HASH}
 	}
+	respond /verify "ok" 200
+}
+
+{$JHONEME_SITE_ADDRESS:http://:8080} {
+	encode zstd gzip
 	header {
 		X-Content-Type-Options nosniff
 		Referrer-Policy no-referrer
@@ -28,5 +33,5 @@ http://127.0.0.1:8081 {
 	}
 	@application path / /index.html /*.js /*.css
 	header @application Cache-Control "no-store"
-	file_server
+	reverse_proxy 127.0.0.1:3000
 }

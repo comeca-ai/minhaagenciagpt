@@ -1,87 +1,63 @@
 # Jhoneme na sua VPS
 
-Este pacote instala o estúdio visual completo em um container Docker. O servidor Caddy oferece arquivos estáticos, acesso com usuário/senha e HTTPS automático quando um domínio é informado. Não é necessário Node.js, npm ou banco de dados para rodar esta versão.
+Um container reúne Caddy, Node.js 24 e SQLite. O Caddy entrega HTTPS; o servidor controla login, sessões e gravações; o SQLite mantém a agência em um volume persistente. Não há cadastro público. A execução autônoma de IA ainda não está conectada.
 
-**Escopo atual:** equipe, reuniões, projetos, briefings, repasses, prompts e avaliações são gerenciados no navegador. O pacote não inclui execução autônoma de agentes nem sincronização de dados entre dispositivos.
+## Instalar
 
-## 1. Preparar a VPS
+Use Linux de 64 bits com Docker Engine e Compose. Como ponto de partida, 1 vCPU e 1 GB de RAM; isso não é um benchmark. O instalador pode instalar Docker CE pelo repositório oficial em Ubuntu/Debian com `--install-docker`.
 
-Use uma VPS Linux de 64 bits com Docker Engine e o plugin Docker Compose. O instalador pode instalar esses componentes pelo repositório oficial em Ubuntu ou Debian, usando a opção `--install-docker`. Para outra distribuição, instale o Docker previamente.
-
-Como ponto de partida para este estúdio estático, reserve 1 vCPU, 1 GB de RAM e alguns GB livres para imagens e backups. Isso é uma configuração inicial sugerida, não um benchmark. Um futuro motor de agentes terá outros requisitos.
-
-Envie `Jhoneme-VPS.zip` para a VPS e extraia em uma pasta permanente, por exemplo `/opt/jhoneme`. O ZIP tem uma pasta chamada `Jhoneme-VPS`; os comandos seguintes devem ser executados dentro dela:
-
-```bash
-unzip Jhoneme-VPS.zip
-cd Jhoneme-VPS
-```
-
-Se necessário, instale o utilitário de extração na VPS Ubuntu/Debian:
-
-```bash
-sudo apt-get update
-sudo apt-get install -y unzip
-```
-
-## 2. Instalar com domínio e HTTPS
-
-Antes de executar:
-
-- Aponte o registro DNS **A** do seu subdomínio para o IPv4 da VPS. Configure **AAAA** somente se o IPv6 da VPS estiver funcionando.
-- Deixe as portas **80/TCP e 443/TCP** disponíveis para este container. A porta 443/UDP habilita HTTP/3 e é opcional para navegar.
-- Se já houver um proxy usando essas portas, utilize o modo local descrito adiante e conecte o proxy existente ao endereço local.
-
-Execute, substituindo domínio e e-mail:
+Baixe o código do GitHub ou extraia o pacote e entre na pasta com `install.sh`. Para uma instalação nova com domínio:
 
 ```bash
 sudo bash install.sh --install-docker \
   --domain agencia.seudominio.com \
-  --email voce@seudominio.com
+  --email voce@seudominio.com \
+  --user Jhoneme
 ```
 
-O instalador pede uma senha com entrada oculta, cria o usuário `diretor`, grava somente o hash da senha em `.env`, constrói a imagem, valida o Caddy e inicia o container. Para usar outro nome, acrescente `--user jhonata`.
+Aponte o DNS A para a VPS, configure AAAA somente se o IPv6 funcionar e libere 80/TCP e 443/TCP. A porta 443/UDP é opcional para HTTP/3. Não use portas ocupadas por outro proxy. A senha é solicitada em entrada oculta e somente seu hash bcrypt fica em `.env`, com permissão 600. Não há senha padrão no repositório.
 
-Depois abra:
+Acesse seu domínio. A porta visual da agência pede usuário e senha; não aparece a caixa de autenticação do navegador. A sessão dura até oito horas, pode ser encerrada em **Sair** e é revogada quando as credenciais mudam. Em HTTPS o cookie é Secure e HttpOnly.
 
-```text
-https://agencia.seudominio.com
-```
+### Pacote privado com acesso já preparado
 
-O navegador exibirá uma caixa de usuário e senha. A emissão do certificado depende do DNS e das portas e pode levar alguns minutos. O teste de saúde interno confirma o servidor, não certifica que o DNS/HTTPS público já está pronto.
+Se o pacote contém `.env`, execute `sudo bash install.sh --install-docker` sem opções de configuração. Ele preserva as credenciais e começa em modo local. Antes de instalar com domínio, ajuste apenas `JHONEME_MODE='https'`, `JHONEME_SITE_ADDRESS='agencia.seudominio.com'` e `JHONEME_ACME_EMAIL` no `.env`. Preserve o hash entre aspas simples. Não publique esse pacote privado nem seu `.env`.
 
-O instalador não altera o firewall. Regras de portas publicadas pelo Docker precisam ser consideradas no firewall da VPS/provedor; não presuma que apenas regras UFW bloqueiam uma porta publicada.
+### Sem domínio
 
-## 3. Instalar sem domínio
+Em uma instalação nova:
 
 ```bash
-sudo bash install.sh --install-docker --local --port 8080
+sudo bash install.sh --install-docker --local --port 8080 --user Jhoneme
 ```
 
-A porta fica vinculada somente a `127.0.0.1` da VPS. No seu computador, abra um túnel:
+No computador, abra o túnel e mantenha-o aberto:
 
 ```bash
 ssh -L 8080:127.0.0.1:8080 usuario@IP_DA_VPS
 ```
 
-Mantenha esse terminal aberto e acesse `http://localhost:8080`. O túnel SSH protege o transporte. Não publique a porta HTTP com a senha em uma rede aberta.
+Acesse `http://localhost:8080`. A porta fica limitada ao loopback e o túnel SSH protege o transporte. Para exposição pública use o modo HTTPS. Um proxy externo exige configuração própria de origem e cookies; este pacote configura o Caddy diretamente.
 
-Se você já usa Nginx, Traefik, Caddy ou outro proxy **no host**, pode encaminhar seu domínio HTTPS para `http://127.0.0.1:8080`. Um proxy em outro container exige uma rede Docker compartilhada; `127.0.0.1` dentro daquele container não é o host. Essa integração depende do proxy existente e não é configurada automaticamente.
+## Onde ficam os dados
 
-## 4. Onde ficam os dados
-
-| Conteúdo | Onde fica | Como preservar |
+| Conteúdo | Local | Backup |
 | --- | --- | --- |
-| Código, fotos e aparência | Imagem Docker construída com `dist/` | Guarde o pacote e use o backup da VPS. |
-| Domínio, usuário e hash da senha | `.env` na pasta da instalação | Incluído no backup da VPS. |
-| Certificados e estado do Caddy | Volumes Docker `caddy_data` e `caddy_config` | Incluídos no backup da VPS. |
-| Projetos, perfis editados, pautas, reuniões e avaliações | `localStorage` do navegador, separado por endereço | **No aplicativo: Histórico & dados → Exportar backup.** |
+| Projetos, perfis, sprints, reuniões, materiais, prompts e avaliações | SQLite `/agency/jhoneme.sqlite`, volume Compose `agency_data` | `workspace.json` no backup da VPS; exportação JSON no aplicativo |
+| Sessões de acesso | SQLite, identificadores protegidos por hash | Não são exportadas |
+| Usuário e hash bcrypt | `.env` | `application.tar.gz` no backup privado |
+| Certificados TLS | Volumes `caddy_data` e `caddy_config` | `certificates.tar.gz` |
+| Código e imagens | Imagem Docker | Repositório e `application.tar.gz` |
 
-**Migrar do site anterior:** abra a Jhoneme no endereço antigo, exporte seu backup JSON, abra o endereço da VPS e restaure o JSON em Histórico & dados. Mudar de domínio, porta ou HTTP para HTTPS cria uma origem diferente no navegador e não transfere os registros automaticamente.
+Os nomes reais dos volumes têm o prefixo do projeto Compose, normalmente `jhoneme_`. Recriar ou atualizar o container preserva os dados. **Não execute `docker compose down -v`**, pois remove os volumes.
 
-A senha protege o acesso ao site. Não cria contas separadas nem faz os registros de dois navegadores se sincronizarem. Um volume Docker não consegue fazer backup de dados que estão somente no navegador.
+A agência tem um único espaço compartilhado pela conta da direção. Os dados são carregados do banco ao abrir/recarregar a página; não há atualização em tempo real. Se outra aba salvar antes, a versão antiga é bloqueada para evitar sobrescrita: exporte suas alterações, recarregue e compare. A interface indica quando a gravação terminou. Espere **Salvo na VPS** antes de fechar.
 
-## 5. Operação cotidiana
+O banco usa uma revisão atômica do documento da agência, além de tabelas para sessões e metadados. É uma primeira versão leve; não oferece consultas analíticas por entidade ou histórico completo de cada revisão. O limite de gravação é 8 MB, incluindo imagens próprias.
+
+**Migrar da prévia:** exporte o JSON em **Histórico & dados** no site anterior e restaure-o na VPS. A prévia estática do Sites continua usando armazenamento do navegador e acesso privado do ChatGPT; o banco da VPS não é conectado automaticamente àquela prévia. A restauração substitui o espaço atual, após a confirmação mostrada pelo aplicativo.
+
+## Manutenção
 
 ```bash
 sudo bash manage.sh status
@@ -90,108 +66,66 @@ sudo bash manage.sh stop
 sudo bash manage.sh start
 sudo bash manage.sh restart
 sudo bash manage.sh password
-```
-
-Fechar a conexão SSH não encerra o container em modo domínio. A política `unless-stopped` faz o serviço retornar após reinicialização do Docker/VPS se ele não tiver sido parado manualmente.
-
-Rodar `sudo bash install.sh` novamente reutiliza o `.env` existente. O instalador não troca silenciosamente domínio ou senha quando recebe novos parâmetros sobre uma instalação existente.
-
-Para mudar o domínio posteriormente, faça backup, ajuste `JHONEME_MODE`, `JHONEME_SITE_ADDRESS` e `JHONEME_ACME_EMAIL` em `.env` e execute `sudo bash manage.sh restart`. Para mudar para modo local, use `JHONEME_MODE='local'`, `JHONEME_SITE_ADDRESS='http://:8080'` e a porta desejada. Exporte o backup JSON antes de trocar o endereço.
-
-## 6. Atualizar e voltar uma versão
-
-1. Exporte o backup JSON dentro do aplicativo.
-2. Execute `sudo bash manage.sh backup` antes de substituir arquivos.
-3. Copie os arquivos do novo pacote para a mesma pasta, preservando `.env` e `backups/`.
-4. Execute:
-
-```bash
-sudo bash manage.sh update
-```
-
-A atualização faz outro backup da pasta atual, mantém uma referência à imagem em execução, atualiza a imagem-base, valida a configuração e recria o serviço. Pode haver uma breve interrupção. Não baixa código do GitHub nem altera automaticamente outros repositórios.
-
-Para voltar à imagem que estava rodando antes da última atualização:
-
-```bash
-sudo bash manage.sh rollback
-```
-
-O rollback da imagem não restaura `.env` nem registros do navegador. Para restaurar esses conteúdos, use os backups correspondentes. A etiqueta `caddy:2-alpine` acompanha a linha principal 2 do servidor; para uma base fixa, substitua `CADDY_IMAGE` em `.env` por uma etiqueta ou digest previamente verificado.
-
-## 7. Backup e restauração da VPS
-
-```bash
 sudo bash manage.sh backup
 ```
 
-O arquivo aparece em `backups/jhoneme-DATA-PID.tar.gz` com permissão restrita. Ele contém:
+O serviço retorna após reinicialização da VPS, salvo se tiver sido parado manualmente. Executar `install.sh` novamente reutiliza o `.env`. Para mudar o domínio, ajuste a configuração e execute `manage.sh restart`. A saúde interna confirma o servidor e a conexão com o banco; DNS e emissão pública de HTTPS precisam ser conferidos no domínio.
 
-- `application.tar.gz`: código, configurações, scripts e o `.env`.
-- `certificates.tar.gz`: estado e certificados do Caddy.
-- `META.txt`: identificação do conteúdo.
+Para instalar sem terminal interativo, use `--password-file /caminho/protegido/senha.txt`, com uma única linha de 8 a 72 bytes. A senha vai pela entrada padrão ao gerador de hash e não aparece nos argumentos. Para trocar, use `manage.sh password --password-file ...`.
 
-Guarde uma cópia fora da VPS. Esse backup contém hashes de acesso e chaves privadas dos certificados TLS; mantenha-o privado. Os volumes são copiados em funcionamento. Para um snapshot sem escrita concorrente, execute `stop`, `backup` e `start` nessa ordem.
+## Atualizar e reverter
 
-Para restaurar um **backup seu** em outra pasta ou VPS com Docker instalado:
+1. Faça `sudo bash manage.sh backup` antes de substituir arquivos.
+2. Copie o código novo, preservando `.env`, `backups/` e os volumes.
+3. Execute `sudo bash manage.sh update`.
+
+O comando também faz backup, guarda a imagem anterior, constrói a nova e aguarda a saúde do serviço. Há uma breve interrupção. Ele não baixa código do GitHub automaticamente. A primeira atualização de uma imagem antiga estática não tem dados no banco para exportar; migre seu JSON pelo aplicativo.
+
+`sudo bash manage.sh rollback` volta à imagem anterior, sem restaurar dados nem configurações. Uma imagem anterior à introdução do banco usa armazenamento local; os dados SQLite permanecem no volume. As imagens base acompanham Caddy 2 e Node 24; teste atualizações antes de uso crítico.
+
+## Backup e restauração
+
+`manage.sh backup` cria `backups/jhoneme-DATA-PID.tar.gz`, privado, contendo:
+
+- `application.tar.gz`: código, scripts e `.env`.
+- `workspace.json`: snapshot consistente da agência lido pelo SQLite, sem sessões.
+- `certificates.tar.gz`: certificados e estado do Caddy.
+- `META.txt`: descrição.
+
+Guarde uma cópia fora da VPS. O backup contém informações da agência, hash de acesso e chaves TLS. O snapshot do banco pode ser feito com o serviço ativo; para uma cópia conjunta sem mudanças nos certificados, pare o serviço antes.
+
+Para restaurar em outra VPS com Docker instalado:
 
 ```bash
 mkdir -m 700 jhoneme-restaurada
 cd jhoneme-restaurada
 tar -xzf /caminho/jhoneme-BACKUP.tar.gz
 tar -xzf application.tar.gz
+sudo bash install.sh
 sudo bash manage.sh restore-certificates "$PWD/certificates.tar.gz"
-sudo bash manage.sh start
+sudo bash manage.sh restore-data "$PWD/workspace.json"
 ```
 
-O comando de restauração para o serviço durante a importação. Não o execute sobre outra instalação em uso sem planejar essa parada. Por padrão, a instalação usa o projeto Compose `jhoneme`; em uma mesma VPS, duas instalações com esse mesmo nome compartilham os volumes. Para uma segunda instância independente, use outro `COMPOSE_PROJECT_NAME` no `.env` e portas distintas. Não execute `docker compose down -v` se quiser preservar os certificados.
+`restore-data` faz um backup de segurança, para o serviço, importa o snapshot e inicia novamente. Ele rejeita arquivos vazios/inválidos; se o backup foi criado antes de qualquer gravação, basta iniciar sem restaurar dados. Um erro de restauração mantém o serviço parado para verificação; use `manage.sh start` após corrigir. Restaure somente backups próprios. Na mesma VPS, duas instalações precisam de `COMPOSE_PROJECT_NAME` e portas distintos para não compartilhar volumes.
 
-Depois, restaure seu backup JSON pelo aplicativo. Este passo é separado e necessário para os registros da agência.
-
-## 8. Instalação não interativa
-
-Crie um arquivo de senha protegido, por exemplo `/root/jhoneme-password.txt`, com uma única linha de 12 a 72 bytes. Use:
+## Verificar
 
 ```bash
-sudo bash install.sh --local \
-  --password-file /root/jhoneme-password.txt
-```
-
-A senha é enviada ao processo de hash pela entrada padrão, sem ser colocada como argumento do processo. O pacote não contém senha padrão, chave SSH, token de API ou credencial da sua conta.
-
-## 9. Verificação e solução de problemas
-
-O instalador executa `docker compose config --quiet`, valida a configuração com o Caddy e aguarda o estado saudável do container. A caixa de login deve aparecer antes de qualquer arquivo da agência ser servido.
-
-- **Porta ocupada:** escolha o modo local ou libere 80/443 do outro servidor de forma planejada.
-- **Sem HTTPS:** confira DNS, IPv6, firewall do provedor e `sudo bash manage.sh logs`.
-- **Docker sem permissão:** use `sudo` ou configure o acesso ao Docker conforme a documentação oficial.
-- **Compose ausente:** instale o plugin Docker Compose oficial; `docker-compose` antigo não é usado.
-- **Instalação interrompida:** se tiver certeza de que não há outro instalador executando, remova a pasta vazia `.install-lock`. Rode novamente sem parâmetros para reutilizar o `.env`.
-- **Projetos desapareceram após a migração:** abra o endereço anterior e exporte o JSON. Os dados não são transferidos pela cópia do código.
-- **Falha após troca de senha:** `.env.previous` guarda a configuração anterior para recuperação local. Restaure-a e reinicie o serviço se necessário.
-
-Os testes do instalador que não exigem Docker podem ser executados com Python 3. Os testes da interface exigem Node.js:
-
-```bash
-python3 tests/deployment.test.py
 node tests/agency.test.cjs
-```
-
-O teste real do container foi executado com sucesso no GitHub Actions em 23/10/2026, incluindo construção, saúde, autenticação e arquivos estáticos. Para repetir em uma máquina com Docker, Compose e curl:
-
-```bash
+node --test tests/server.test.mjs tests/sync.test.cjs
+python3 tests/deployment.test.py
 bash tests/docker-smoke.sh
 ```
 
-Ele usa projeto, imagem e porta locais isolados e verifica saúde, autenticação, arquivos, erros 404 e cabeçalhos. A execução real passou no GitHub Actions em 23/10/2026; a validação de DNS e emissão de HTTPS público permanece para a sua VPS. O teste não publica um domínio nem provisiona uma VPS.
+Os testes do servidor exigem Node 24. O último comando exige Docker, Compose e curl: usa projeto e porta isolados, testa login real bcrypt, sessão, API protegida, gravação, conflito, recriação do container, backup e restauração. O workflow executa essas verificações no GitHub Actions. A revisão visual em navegadores e a emissão de HTTPS no seu domínio permanecem como verificações da instalação.
 
-## Referências oficiais
+Se não entrar: confira `manage.sh logs`, DNS/portas e se o modo corresponde a HTTP local ou HTTPS. Após trocar a senha, entre novamente. Se uma instalação for interrompida, remova `.install-lock` somente quando tiver certeza de que não há instalador ativo. `.env.previous` permite recuperar a configuração anterior a uma troca de senha.
 
-- Docker Engine em Ubuntu: https://docs.docker.com/engine/install/ubuntu/
-- Docker Engine em Debian: https://docs.docker.com/engine/install/debian/
-- Docker Compose: https://docs.docker.com/compose/install/linux/
-- Imagem oficial Caddy: https://hub.docker.com/_/caddy
-- HTTPS automático: https://caddyserver.com/docs/automatic-https
-- Autenticação: https://caddyserver.com/docs/caddyfile/directives/basic_auth
-- Hash da senha: https://caddyserver.com/docs/command-line#caddy-hash-password
+## Referências
+
+- https://docs.docker.com/engine/install/ubuntu/
+- https://docs.docker.com/engine/install/debian/
+- https://docs.docker.com/compose/install/linux/
+- https://nodejs.org/docs/latest-v24.x/api/sqlite.html
+- https://caddyserver.com/docs/automatic-https
+- https://caddyserver.com/docs/caddyfile/directives/basic_auth

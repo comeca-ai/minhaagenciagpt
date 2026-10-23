@@ -15,7 +15,7 @@ cleanup() {
   rm -rf -- "$test_dir"
 }
 trap cleanup EXIT
-cp -R "$JHONEME_ROOT/dist" "$JHONEME_ROOT/deploy" "$test_dir/"
+cp -R "$JHONEME_ROOT/dist" "$JHONEME_ROOT/deploy" "$JHONEME_ROOT/server" "$test_dir/"
 cp "$JHONEME_ROOT/Dockerfile" "$JHONEME_ROOT/.dockerignore" "$JHONEME_ROOT/compose.yaml" "$JHONEME_ROOT/compose.local.yaml" "$test_dir/"
 docker pull caddy:2-alpine
 test_password='Jhoneme-smoke-password'
@@ -39,14 +39,31 @@ compose build --pull
 compose run --rm --no-deps --entrypoint caddy studio validate --config /etc/caddy/Caddyfile --adapter caddyfile
 start_studio
 base="http://127.0.0.1:$test_port"
-[[ "$(curl -sS -o /dev/null -w '%{http_code}' "$base/")" == 401 ]] || fail 'Acesso sem senha não foi bloqueado.'
-[[ "$(curl -sS -u tester:wrong -o /dev/null -w '%{http_code}' "$base/")" == 401 ]] || fail 'Senha incorreta não foi bloqueada.'
-for path in / /app.js /studio.js /quality.js /styles.css /assets/marina.png; do
-  [[ "$(curl -sS -u "tester:$test_password" -o /dev/null -w '%{http_code}' "$base$path")" == 200 ]] || fail "Falha ao servir $path."
+[[ "$(curl -sS -o /dev/null -w '%{http_code}' "$base/")" == 302 ]] || fail 'Acesso sem sessão não foi bloqueado.'
+[[ "$(curl -sS -o /dev/null -w '%{http_code}' "$base/login")" == 200 ]] || fail 'Porta de entrada indisponível.'
+[[ "$(curl -sS -o /dev/null -w '%{http_code}' "$base/api/workspace")" == 401 ]] || fail 'API sem sessão não foi bloqueada.'
+[[ "$(curl -sS -H "Origin: $base" -H 'Content-Type: application/json' --data '{"username":"tester","password":"wrong"}' -o /dev/null -w '%{http_code}' "$base/api/login")" == 401 ]] || fail 'Senha incorreta não foi bloqueada.'
+printf '{"username":"tester","password":"%s"}' "$test_password" > "$test_dir/login.json"
+[[ "$(curl -sS -H "Origin: $base" -H 'Content-Type: application/json' --data-binary "@$test_dir/login.json" -c "$test_dir/cookies" -o /dev/null -w '%{http_code}' "$base/api/login")" == 200 ]] || fail 'Login falhou.'
+for path in / /app.js /server-sync.js /studio.js /quality.js /styles.css /assets/marina.png; do
+  [[ "$(curl -sS -b "$test_dir/cookies" -o /dev/null -w '%{http_code}' "$base$path")" == 200 ]] || fail "Falha ao servir $path."
 done
-[[ "$(curl -sS -u "tester:$test_password" -o /dev/null -w '%{http_code}' "$base/arquivo-inexistente")" == 404 ]] || fail 'Arquivo inexistente não retornou 404.'
-curl -sS -u "tester:$test_password" -D "$test_dir/headers" "$base/" > "$test_dir/page"
+[[ "$(curl -sS -b "$test_dir/cookies" -o /dev/null -w '%{http_code}' "$base/arquivo-inexistente")" == 404 ]] || fail 'Arquivo inexistente não retornou 404.'
+curl -sS -b "$test_dir/cookies" -D "$test_dir/headers" "$base/" > "$test_dir/page"
 grep -qi 'content-security-policy:' "$test_dir/headers" || fail 'CSP ausente.'
 grep -qi 'cache-control: no-store' "$test_dir/headers" || fail 'Controle de cache ausente.'
 grep -qi 'Jhoneme' "$test_dir/page" || fail 'Página inesperada.'
-note 'OK: container saudável, senha obrigatória, assets disponíveis e cabeçalhos presentes.'
+cat > "$test_dir/state.json" <<'JSON'
+{"expectedRevision":0,"state":{"schema":1,"areas":[],"agents":[],"steps":[],"adjustments":[],"history":[],"studio":{"version":1,"people":[],"projects":[],"meetings":[],"tasks":[]}}}
+JSON
+[[ "$(curl -sS -b "$test_dir/cookies" -H "Origin: $base" -H 'Content-Type: application/json' -X PUT --data-binary "@$test_dir/state.json" -o /dev/null -w '%{http_code}' "$base/api/workspace")" == 200 ]] || fail 'Banco não gravou.'
+[[ "$(curl -sS -b "$test_dir/cookies" -H "Origin: $base" -H 'Content-Type: application/json' -X PUT --data-binary "@$test_dir/state.json" -o /dev/null -w '%{http_code}' "$base/api/workspace")" == 409 ]] || fail 'Conflito não foi detectado.'
+compose up -d --force-recreate studio
+wait_healthy
+curl -fsS -b "$test_dir/cookies" "$base/api/workspace" > "$test_dir/persisted.json"
+grep -q '"revision":1' "$test_dir/persisted.json" || fail 'Banco ou sessão perdido ao recriar container.'
+compose run --rm --no-deps -T --entrypoint node studio /app/backup.mjs > "$test_dir/workspace.json"
+compose run --rm --no-deps -T --entrypoint node studio /app/restore.mjs < "$test_dir/workspace.json"
+[[ "$(curl -sS -b "$test_dir/cookies" -H "Origin: $base" -H 'Content-Type: application/json' --data '{}' -o /dev/null -w '%{http_code}' "$base/api/logout")" == 200 ]] || fail 'Logout falhou.'
+[[ "$(curl -sS -b "$test_dir/cookies" -o /dev/null -w '%{http_code}' "$base/api/workspace")" == 401 ]] || fail 'Sessão não foi revogada.'
+note 'OK: login, sessão, proteção da API, banco persistente, conflitos, backup, restauração, assets e cabeçalhos.'

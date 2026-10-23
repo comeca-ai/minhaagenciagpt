@@ -18,6 +18,10 @@ O aplicativo está em `dist/` e não exige compilação. Sirva essa pasta com um
 
 A versão `jhoneme-agency-2.0` integra briefing de negócio, contratos da diretora e dos criadores, contexto por rodada, feedback anterior e régua com seis critérios. Fontes inventadas, ações sem autorização e material ausente bloqueiam aprovação. Consulte [PROMPTS.md](PROMPTS.md) para o fluxo, as referências e os limites da avaliação.
 
+## Configuração guiada
+
+Abra **Configurar passo a passo** na navegação. O fluxo conduz por projeto, diretora, briefing da sprint, equipe, prompts/prazo e entrega/avaliação, preservando o ponto de parada nos dados da agência.
+
 ## O que funciona
 
 - Perfis editáveis: rosto, nome, cargo, habilidades, personalidade, instruções, autonomia e marcas.
@@ -39,11 +43,11 @@ A versão `jhoneme-agency-2.0` integra briefing de negócio, contratos da direto
 
 ## Limites desta versão
 
-É um protótipo estático, sem motor de IA conectado. Não executa agentes, não contrata pessoas, não instala ferramentas e não gera respostas autônomas. As avaliações, os planos e os materiais são registros manuais; não há notas ou entregas simuladas. Os rascunhos de prompt são montados com os dados locais, não otimizados por um modelo.
+É um estúdio com persistência SQLite na VPS e uma prévia estática no Sites, sem motor de IA conectado. Não executa agentes, não contrata pessoas, não instala ferramentas e não gera respostas autônomas. As avaliações, os planos e os materiais são registros manuais; não há notas ou entregas simuladas. Os rascunhos de prompt são montados com os dados da agência, não otimizados por um modelo.
 
 Registrar uma janela não cria um trabalho em segundo plano. Para operação real, o backend precisa receber e impor um prazo absoluto comum aos agentes e ferramentas, persistir eventos, gerenciar cancelamento e reservar revisão dentro desse limite.
 
-Os dados ficam no `localStorage` do navegador. Não há sincronização entre dispositivos. Exporte um backup para preservar ajustes. Imagens próprias consomem a cota local do navegador.
+Na VPS, os dados ficam no SQLite em volume Docker e são carregados em qualquer dispositivo após o login. Gravações concorrentes são protegidas por revisão, sem atualização em tempo real. A prévia estática usa `localStorage`; exporte e importe o JSON para migrar. O backup da VPS inclui o banco. Há uma porta visual com login, sem cadastro público, e sessões de até oito horas. Nenhuma senha é publicada no código.
 
 ## Contrato para a futura orquestração
 
