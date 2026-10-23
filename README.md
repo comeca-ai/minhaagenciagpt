@@ -1,6 +1,6 @@
 # Jhoneme — estúdio criativo de agentes
 
-Aplicativo visual em português para configurar uma agência de agentes de IA: recepção, equipe com retratos fictícios, marcas, pautas, sala de reunião, pedidos de ferramentas, prazos globais, repasses, prompts e avaliações.
+Aplicativo visual em português com execução de desafios pelo OpenAI Agents SDK: recepção, equipe com retratos fictícios, marcas, pautas, sala de reunião, pedidos de ferramentas, prazos globais, repasses, prompts e avaliações.
 
 ## Instalar em VPS com Docker
 
@@ -32,7 +32,7 @@ A versão `jhoneme-agency-2.1` integra briefing de negócio, contratos da direto
 
 Na página **Início**, abra **Falar ou escrever meu desafio**. Grave até dez minutos, pare, confira a transcrição e clique em **Salvar e abrir desafio**. O registro recebe um ID estável antes de você escolher projeto, diretora ou prazo. A transcrição original fica preservada; o arquivo de áudio não é armazenado.
 
-Na página do desafio, revise os campos identificados e confirme a direção. Rascunhos são salvos automaticamente. Plano, equipe, ferramentas, repasses, avaliações e material ficam nesta mesma página. O ID e o link permanecem iguais durante todo o trabalho. Confirmar novamente não duplica a tarefa. Os pedidos anteriores aparecem como desafios, mantendo seus dados.
+Na página do desafio, revise projeto, diretora e prazo e clique em **Iniciar produção** (até US$ 0,10). A diretora monta a equipe, cria os prompts e coordena o trabalho. Rascunhos são salvos automaticamente. Plano, equipe, ferramentas, repasses, avaliações e material ficam nesta mesma página. O ID e o link permanecem iguais durante todo o trabalho. Confirmar novamente não duplica a tarefa. Os pedidos anteriores aparecem como desafios, mantendo seus dados.
 
 O menu principal reúne Início, Desafios, Equipe, Projetos e Reunião. Autorizações, estrutura e ajustes ficam em Gestão da agência. A identificação de nomes e prazos usa regras locais conservadoras; dados ausentes ou ambíguos ficam para revisão. Não há interpretação geral por LLM.
 
@@ -65,26 +65,28 @@ O comando recebe a chave com entrada oculta e reinicia o container. Use HTTPS ou
 
 ## Limites desta versão
 
-É um estúdio com persistência SQLite na VPS e D1 no Sites, sem motor de IA conectado. Não executa agentes, não contrata pessoas, não instala ferramentas e não gera respostas autônomas. As avaliações, os planos e os materiais são registros manuais; não há notas ou entregas simuladas. Os rascunhos de prompt são montados com os dados da agência, não otimizados por um modelo.
+O motor produz texto de verdade por meio do OpenAI Agents SDK, com diretora, até três especialistas, revisão e avaliações identificadas como IA. O teto total do piloto é US$ 1 e dez execuções, incluindo a verificação técnica. Consulte [o contrato de execução](docs/execucao-economica.md) para orçamento, limites, testes e configuração.
 
-Registrar uma janela não cria um trabalho em segundo plano. Para operação real, o backend precisa receber e impor um prazo absoluto comum aos agentes e ferramentas, persistir eventos, gerenciar cancelamento e reservar revisão dentro desse limite.
+A aba deve permanecer aberta durante a produção; os registros ficam no banco, mas fechar a conexão pode interromper o trabalho. Ferramentas externas, pesquisa na web e publicação não estão conectadas. Reuniões e advisor continuam como registros. Não há contratação de pessoas nem entrega simulada.
 
 Na VPS, os dados ficam no SQLite em volume Docker e são carregados em qualquer dispositivo após o login. Gravações concorrentes são protegidas por revisão, sem atualização em tempo real. O Sites usa D1, separado por usuário autenticado, com migrações em `drizzle/`. Na primeira abertura com banco vazio, importa os registros válidos deste navegador; um banco preenchido sempre prevalece. O estado é salvo em blocos limitados por tamanho, em uma transação com controle de revisão. Links de desafios são privados e exigem o mesmo acesso à agência. O backup da VPS inclui o banco. Há uma porta visual com login, sem cadastro público, e sessões de até oito horas. Nenhuma senha é publicada no código.
 
-## Contrato para a futura orquestração
+## Contrato de coordenação
 
 1. O usuário aprova a diretora e define objetivo, material e prazo total.
 2. A diretora compõe a equipe com até três criadores do banco pertinente à marca.
 3. Antes de cada chamada, a diretora prepara um prompt específico com o briefing atualizado, papel, entrega esperada, critérios de avaliação e tempo restante.
 4. Todos os agentes herdam o mesmo `deadlineAt`; um repasse não cria um novo prazo global.
-5. A diretora avalia cada entrega com evidências, solicita correções dentro do tempo restante e faz revisão final.
+5. A diretora integra e revisa o material; uma revisora de IA avalia cada participante com evidências. Este piloto não repete rodadas automaticamente.
 6. Ferramentas ausentes ou gastos adicionais exigem pedido explícito com finalidade, custo, limites e impacto. A espera não estende o prazo automaticamente.
 7. Ao encerrar a janela, devolver o material disponível, o que foi verificado e as pendências, sem declarar trabalho inexistente como concluído.
 
 ## Verificação
 
 ```sh
-node tests/agency.test.cjs
+npm ci
+npm test
+python3 tests/deployment.test.py
 ```
 
 Os testes verificam as telas, migração de dados, prazos variáveis, limite de criadores, autorização de ferramentas, material e avaliações obrigatórias, exportação, orçamento dos repasses e rejeição de dados inválidos. A prévia de navegador não estava disponível durante esta implementação; é necessário conferir visualmente nos navegadores-alvo.
@@ -98,7 +100,9 @@ Os testes verificam as telas, migração de dados, prazos variáveis, limite de 
 - `public/agency.js`: recepção, pautas, ferramentas e exportações.
 - `public/direction.js`: vínculos, substituição e histórico de diretoras por projeto.
 - `public/prompts.js`: contratos operacionais e contexto de conteúdo e negócio.
-- `public/quality.js`: prazo global, repasses, prompts e avaliações.
+- `public/quality.js`: registros manuais de prazo e avaliações.
+- `public/ai.js`, `ai.css`: execução, andamento, material e aprovação na página do desafio.
+- `server/ai-*.mjs`, `app/api/agents/route.ts`: SDK, ledger de custo, persistência e eventos.
 - `public/styles.css`, `studio.css`, `jhoneme.css`: estilos e adaptação a telas menores.
 - `public/assets/`: retratos fictícios e imagem conceitual gerados para o projeto.
 - `tests/agency.test.cjs`: verificações sem dependências externas.

@@ -5,6 +5,17 @@ export const workspaces = sqliteTable('workspaces', {
   revision: integer('revision').notNull(),
   snapshot: text('snapshot').notNull(),
 });
+
+export const aiControl = sqliteTable('ai_control', {
+  id: text('id').primaryKey(),
+  revision: integer('revision').notNull(),
+  payload: text('payload').notNull(),
+});
+export const aiRuns = sqliteTable('ai_runs', {
+  id: text('id').primaryKey(),
+  owner: text('owner').notNull(),
+  payload: text('payload').notNull(),
+});
 // Bounded chunks preserve existing workspaces with uploaded profile portraits.
 export const workspaceChunks = sqliteTable('workspace_chunks', {
   userId: text('user_id').notNull(),

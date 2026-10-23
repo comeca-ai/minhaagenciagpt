@@ -8,6 +8,13 @@
       "when": 1792748515185,
       "tag": "0000_curvy_mariko_yashida",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792751684098,
+      "tag": "0001_long_inertia",
+      "breakpoints": true
     }
   ]
 }

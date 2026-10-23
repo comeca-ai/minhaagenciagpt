@@ -16,7 +16,9 @@ Manutenção da Jhoneme — execute na pasta do pacote:
   sudo bash manage.sh backup      Salvar código, configuração e dados.
   sudo bash manage.sh password    Trocar a senha pelo prompt oculto.
   sudo bash manage.sh deepgram    Configurar a transcrição por voz (chave oculta).
+  sudo bash manage.sh openai      Configurar a chave de execução (entrada oculta).
   sudo bash manage.sh deepgram --key-file /caminho/chave.txt
+  sudo bash manage.sh openai --key-file /caminho/chave.txt
   sudo bash manage.sh password --password-file /caminho/senha.txt
   sudo bash manage.sh restore-data /caminho/workspace.json
   sudo bash manage.sh restore-certificates /caminho/certificates.tar.gz
@@ -28,7 +30,7 @@ HELP
 action="${1:-help}"
 [[ $# -eq 0 ]] || shift
 case "$action" in help|--help|-h) usage; exit 0 ;; esac
-case "$action" in start|stop|restart|status|logs|update|rollback|backup|password|deepgram|restore-data|restore-certificates) ;; *) fail 'Comando desconhecido. Use manage.sh help.' ;; esac
+case "$action" in start|stop|restart|status|logs|update|rollback|backup|password|deepgram|openai|restore-data|restore-certificates) ;; *) fail 'Comando desconhecido. Use manage.sh help.' ;; esac
 require_docker
 configure_compose
 umask 077
@@ -43,7 +45,7 @@ backup_studio() (
   archive="$JHONEME_ROOT/backups/jhoneme-$timestamp-$$.tar.gz"
   tar -czf "$temp/application.tar.gz" -C "$JHONEME_ROOT" \
     .env .env.example Dockerfile .dockerignore compose.yaml compose.local.yaml \
-    compose.https.yaml install.sh manage.sh README.md INSTALAR-VPS.md PROMPTS.md deploy scripts server public tests
+    compose.https.yaml install.sh manage.sh README.md INSTALAR-VPS.md PROMPTS.md deploy scripts server public tests docs
   # A transactional read exports workspace data without copying live WAL files.
   # Older static images have no database to export during their first upgrade.
   compose run --rm --no-deps -T --entrypoint sh studio -c 'if [ -f /app/backup.mjs ]; then node /app/backup.mjs; else printf "{\"format\":\"jhoneme-workspace-v1\",\"state\":null,\"revision\":0}"; fi' > "$temp/workspace.json"
@@ -52,7 +54,7 @@ backup_studio() (
     'Backup Jhoneme: application.tar.gz contém código e configuração.' \
     'certificates.tar.gz contém os volumes de certificados do Caddy.' \
     'Contém hashes de acesso e chaves TLS. Mantenha este arquivo privado.' \
-    'workspace.json contém projetos, perfis, tarefas, reuniões e avaliações do banco. Sessões não são exportadas.' \
+    'workspace.json inclui workspace, execuções de IA e contabilidade. Sessões não são exportadas.' \
     'Restauração: siga INSTALAR-VPS.md na pasta da aplicação.' > "$temp/META.txt"
   tar -czf "$archive" -C "$temp" application.tar.gz certificates.tar.gz workspace.json META.txt
   chmod 600 "$archive"
@@ -146,29 +148,32 @@ case "$action" in
     compose up -d --force-recreate studio
     wait_healthy
     note 'Senha alterada. O navegador pode pedir as credenciais novamente.' ;;
-  deepgram)
+  deepgram|openai)
+    key_name='DEEPGRAM_API_KEY'; provider='Deepgram'
+    if [[ "$action" == openai ]]; then key_name='OPENAI_API_KEY'; provider='OpenAI'; fi
     if (($#)); then
-      [[ $# -eq 2 && "$1" == --key-file && -r "$2" ]] || fail 'Use deepgram [--key-file ARQUIVO].'
-      deepgram_key="$(cat -- "$2")"
+      [[ $# -eq 2 && "$1" == --key-file && -r "$2" ]] || fail "Use $action [--key-file ARQUIVO]."
+      provider_key="$(cat -- "$2")"
     elif [[ -t 0 ]]; then
-      read -r -s -p 'Chave Deepgram (entrada oculta): ' deepgram_key; printf '\n'
+      read -r -s -p "Chave $provider (entrada oculta): " provider_key; printf '\n'
     else
       fail 'Use um terminal interativo ou --key-file.'
     fi
-    [[ "$deepgram_key" =~ ^[A-Za-z0-9._-]{20,200}$ ]] || fail 'Formato de chave inválido.'
+    [[ "$provider_key" =~ ^[A-Za-z0-9._-]{20,300}$ ]] || fail 'Formato de chave inválido.'
     temp_env="$(mktemp "$JHONEME_ROOT/.env.tmp.XXXXXX")"
     trap 'rm -f -- "$temp_env"' EXIT
     while IFS= read -r line || [[ -n "$line" ]]; do
-      [[ "$line" == DEEPGRAM_API_KEY=* ]] || printf '%s\n' "$line"
+      [[ "$line" == "$key_name="* ]] || printf '%s\n' "$line"
     done < "$JHONEME_ENV_FILE" > "$temp_env"
-    printf "DEEPGRAM_API_KEY='%s'\n" "$deepgram_key" >> "$temp_env"
-    unset deepgram_key
+    printf "%s='%s'\n" "$key_name" "$provider_key" >> "$temp_env"
+    unset provider_key
     chmod 600 "$temp_env"
     mv -- "$temp_env" "$JHONEME_ENV_FILE"
     configure_compose
     compose up -d --force-recreate studio
     wait_healthy
-    note 'Deepgram configurado. A chave fica somente no servidor.' ;;
+    note "$provider configurado. A chave fica somente no servidor."
+    if [[ "$action" == openai ]]; then note 'O orçamento não foi alterado. Consulte docs/execucao-economica.md antes de liberar gastos nesta instalação.'; fi ;;
   restore-data)
     [[ $# -eq 1 && -f "$1" ]] || fail 'Informe workspace.json extraído de um backup da Jhoneme.'
     backup_studio

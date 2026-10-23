@@ -134,7 +134,8 @@ sudo bash manage.sh restore-data "$PWD/workspace.json"
 
 ```bash
 node tests/agency.test.cjs
-node --test tests/server.test.mjs tests/sync.test.cjs tests/deepgram.test.mjs tests/voice.test.cjs
+npm ci --prefix server --omit=dev --ignore-scripts
+node --test tests/*.mjs tests/sync.test.cjs tests/voice.test.cjs
 python3 tests/deployment.test.py
 bash tests/docker-smoke.sh
 ```
@@ -151,3 +152,14 @@ Se não entrar: confira `manage.sh logs`, DNS/portas e se o modo corresponde a H
 - https://nodejs.org/docs/latest-v24.x/api/sqlite.html
 - https://caddyserver.com/docs/automatic-https
 - https://caddyserver.com/docs/caddyfile/directives/basic_auth
+
+
+## Execução com OpenAI Agents SDK
+
+O container inclui o motor e as dependências oficiais. Configure a chave sem incluí-la no Git ou na imagem:
+
+```bash
+sudo bash manage.sh openai
+```
+
+O orçamento da VPS inicia em zero. O piloto de US$ 1 está alocado no site hospedado; não é duplicado por um clone. [Leia o contrato de execução](docs/execucao-economica.md) antes de transferir a operação ou alocar outro lote. A execução exige manter a aba aberta. Os arquivos de backup administrativos incluem os registros de IA e sua contabilidade; o backup do navegador contém somente o workspace.

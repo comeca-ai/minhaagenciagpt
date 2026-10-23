@@ -1,6 +1,10 @@
 # syntax=docker/dockerfile:1
 ARG CADDY_IMAGE=caddy:2-alpine
 FROM ${CADDY_IMAGE} AS caddy
+FROM node:24-alpine AS dependencies
+WORKDIR /app
+COPY server/package.json server/package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 FROM node:24-alpine
 COPY --from=caddy /usr/bin/caddy /usr/bin/caddy
 
@@ -15,6 +19,7 @@ RUN apk add --no-cache ca-certificates \
 COPY --chown=10001:10001 public/ /srv/
 COPY deploy/Caddyfile /etc/caddy/Caddyfile
 COPY --chown=10001:10001 server/ /app/
+COPY --from=dependencies --chown=10001:10001 /app/node_modules /app/node_modules
 ENV XDG_DATA_HOME=/data XDG_CONFIG_HOME=/config
 USER 10001:10001
 EXPOSE 8080 8443

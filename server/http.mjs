@@ -4,10 +4,11 @@ import {resolve,sep,extname} from 'node:path';
 import {createHash} from 'node:crypto';
 import {openStore,validWorkspace} from './store.mjs';
 import {transcribeAudio,MAX_AUDIO_BYTES,AUDIO_TYPES,audioType} from './deepgram.mjs';
+import {agentsResponse} from './ai-http.mjs';
 
 const maxBytes=8_000_000;
 const mime={'.html':'text/html; charset=utf-8','.js':'application/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.webp':'image/webp','.svg':'image/svg+xml','.json':'application/json'};
-export function createAgencyServer({database=process.env.JHONEME_DB_PATH||'/agency/jhoneme.sqlite',staticRoot='/srv',secure=process.env.JHONEME_MODE==='https',verifyCredentials,authFingerprint,deepgramKey=process.env.DEEPGRAM_API_KEY,transcriber=transcribeAudio}={}){
+export function createAgencyServer({database=process.env.JHONEME_DB_PATH||'/agency/jhoneme.sqlite',staticRoot='/srv',secure=process.env.JHONEME_MODE==='https',verifyCredentials,authFingerprint,deepgramKey=process.env.DEEPGRAM_API_KEY,transcriber=transcribeAudio,openaiKey=process.env.OPENAI_API_KEY,aiLimitMicros=Number(process.env.JHONEME_AI_LIMIT_MICROS??0)}={}){
  const fingerprint=authFingerprint??createHash('sha256').update((process.env.JHONEME_ADMIN_USER||'')+'\0'+(process.env.JHONEME_PASSWORD_HASH||'')).digest('hex');
  const store=openStore(database,fingerprint),attempts=new Map();let activeLogins=0;
  let activeAudio=0,audioWindow={until:0,count:0};
@@ -42,6 +43,15 @@ export function createAgencyServer({database=process.env.JHONEME_DB_PATH||'/agen
     res.writeHead(302,{Location:'/login'});return res.end();
    }
    if(path==='/api/session'&&req.method==='GET')return send(res,200,{authenticated:true});
+   if(path==='/api/agents'){
+    const controller=new AbortController();res.on('close',()=>{if(!res.writableFinished)controller.abort()});
+    const payload=req.method==='POST'?JSON.stringify(await body(req)):undefined;
+    const request=new Request((secure?'https':'http')+'://'+req.headers.host+req.url,{method:req.method,headers:new Headers(Object.entries(req.headers).filter(([,v])=>typeof v==='string')),body:payload,signal:controller.signal});
+    const result=await agentsResponse(request,{owner:'agency',store:store.ai,workspace:store,key:openaiKey,limitMicros:aiLimitMicros,initialMicros:Number(process.env.JHONEME_AI_INITIAL_MICROS||0),initialRuns:Number(process.env.JHONEME_AI_INITIAL_RUNS||0)});
+    res.writeHead(result.status,Object.fromEntries(result.headers));
+    if(result.body){const reader=result.body.getReader();try{while(true){const {done,value}=await reader.read();if(done)break;if(res.destroyed){await reader.cancel();break;}res.write(value);}}finally{reader.releaseLock()}}
+    return res.end();
+   }
    if(path==='/api/voice-config'&&req.method==='GET')return send(res,200,{available:!!deepgramKey,maxSeconds:600,maxBytes:MAX_AUDIO_BYTES});
    if(path==='/api/transcribe'&&req.method==='POST'){
     if(!deepgramKey)return send(res,503,{error:'Configure o Deepgram no servidor para usar a gravação.'});

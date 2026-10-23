@@ -6,3 +6,4 @@
 !public/**
 !server/
 !server/**
+server/node_modules/

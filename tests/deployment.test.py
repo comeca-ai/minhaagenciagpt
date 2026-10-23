@@ -121,6 +121,18 @@ sys.exit(0)
         self.assertNotIn(secret, result.stdout + result.stderr + self.log.read_text())
         self.assertEqual((self.root / ".env").stat().st_mode & 0o777, 0o600)
 
+    def test_openai_setup_does_not_grant_more_budget(self):
+        self.assertEqual(self.install().returncode, 0)
+        keyfile = self.root / "openai.txt"
+        secret = "sk-test-private-openai-token-12345"
+        keyfile.write_text(secret)
+        result = subprocess.run(["bash", str(self.root / "manage.sh"), "openai", "--key-file", str(keyfile)], cwd=self.root, env=self.env, capture_output=True, text=True, timeout=15)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        config = (self.root / ".env").read_text()
+        self.assertIn(secret, config)
+        self.assertNotIn("JHONEME_AI_LIMIT_MICROS='1000000'", config)
+        self.assertNotIn(secret, result.stdout + result.stderr + self.log.read_text())
+
     def test_short_and_multiline_passwords_rejected(self):
         for password in ("short", "one-line-long\nsecond-line"):
             with self.subTest(password=password):
