@@ -19,7 +19,6 @@ services:
     tmpfs:
       - /tmp:size=32m,mode=1777
     environment:
-      DEEPGRAM_API_KEY: ${DEEPGRAM_API_KEY:-}
       JHONEME_MODE: ${JHONEME_MODE:?Execute install.sh primeiro}
       JHONEME_DB_PATH: /agency/jhoneme.sqlite
       DEEPGRAM_API_KEY: ${DEEPGRAM_API_KEY:-}
